@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
     <PackageReference Include="Discord.Net" Version="1.0.2" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.0.1.307" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
@@ -16,6 +16,10 @@
     <None Update="_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+</ItemGroup>
+
+<ItemGroup>
+    <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.0" />
 </ItemGroup>
 
 </Project>

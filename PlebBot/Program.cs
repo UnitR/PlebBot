@@ -3,12 +3,11 @@ using Discord.WebSocket;
 using Discord.Commands;
 using System;
 using System.Threading.Tasks;
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Modules;
 
-namespace PMCDBot
+namespace PlebBot
 {
     public class Program
     {
@@ -64,8 +63,10 @@ namespace PMCDBot
         public async Task InstallCommandsAsync()
         {
             _client.MessageReceived += HandleCommandAsync;
-            await _commands.AddModuleAsync<InfoModule>();
+            await _commands.AddModuleAsync<Miscellaneous>();
             await _commands.AddModuleAsync<LastFm>();
+            await _commands.AddModuleAsync<Help>();
+            await _commands.AddModuleAsync<Admin>();
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
