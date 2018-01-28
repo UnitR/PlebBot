@@ -5,7 +5,10 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using PlebBot.Modules;
+using PlebBot.Data;
 
 namespace PlebBot
 {
@@ -39,6 +42,8 @@ namespace PlebBot
                 }))
                 .AddSingleton<Random>()
                 .AddSingleton(_config)
+                .AddEntityFrameworkNpgsql()
+                .AddDbContext<BotContext>(options => options.UseNpgsql(_config["connection_string"]))
                 .BuildServiceProvider();
 
             _client = new DiscordSocketClient();

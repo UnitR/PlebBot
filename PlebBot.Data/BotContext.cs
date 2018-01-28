@@ -7,10 +7,7 @@ namespace PlebBot.Data
     {
         public virtual DbSet<User> Users { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseNpgsql(@"connectionstring");
-        }
+        public BotContext(DbContextOptions<BotContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
