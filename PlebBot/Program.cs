@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using PlebBot.Modules;
 using PlebBot.Data;
+using PlebBot.Data.Models;
 
 namespace PlebBot
 {
@@ -48,6 +48,8 @@ namespace PlebBot
 
             _client = new DiscordSocketClient();
             _client.Log += Log;
+            _client.JoinedGuild += JoinGuild;
+            _client.LeftGuild += LeaveGuild;
 
             _commands = new CommandService();
             await InstallCommandsAsync();
@@ -80,12 +82,37 @@ namespace PlebBot
             if (message == null) return;
             int argPos = 0;
             if (!(message.HasStringPrefix(_config["prefix"], ref argPos) ||
-                  message.HasMentionPrefix(_client.CurrentUser, ref argPos))) return;
+                  message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var context = new SocketCommandContext(_client, message);
             var result = await _commands.ExecuteAsync(context, argPos, _services);
             if (!result.IsSuccess)
             {
                 await context.Channel.SendMessageAsync(result.ErrorReason);
+            }
+        }
+
+        private async Task JoinGuild(SocketGuild guild)
+        {
+            if (guild == null) return;
+
+            var db = _services.GetService<BotContext>();
+            db.Servers.Add(new Server()
+            {
+                DiscordId = guild.Id.ToString()
+            });
+            await db.SaveChangesAsync();
+        }
+
+        private async Task LeaveGuild(SocketGuild guild)
+        {
+            if (guild == null) return;
+
+            var db = _services.GetService<BotContext>();
+            var server = await db.Servers.SingleOrDefaultAsync(s => s.DiscordId == guild.Id.ToString());
+            if (server != null)
+            {
+                db.Servers.Remove(server);
+                await db.SaveChangesAsync();
             }
         }
     }

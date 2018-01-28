@@ -2,11 +2,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 
-namespace PlebBot.Data
+namespace PlebBot.Data.Models
 {
     public class User
     {
-        public int UserId { get; set; }
+        public int Id { get; set; }
 
         public string DiscordId { get; set; }
 

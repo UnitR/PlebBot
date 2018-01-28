@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators.Internal;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
+using PlebBot.Data.Models;
 
 namespace PlebBot.Modules
 {
@@ -153,10 +154,10 @@ namespace PlebBot.Modules
                     .WithUrl($"https://www.last.fm/user/{username}")
                     .AddField("**Current:**",
                         $"{response.Content[0].ArtistName} - {response.Content[0].Name} " +
-                        $"{currAlbum}")
+                        $"[{currAlbum}]")
                     .AddField("**Previous:**",
                         $"{response.Content[1].ArtistName} - {response.Content[1].Name} " +
-                        $"{prevAlbum}")
+                        $"[{prevAlbum}]")
                     .WithColor(Color.DarkBlue);
 
                 await ReplyAsync("", false, msg.Build());
