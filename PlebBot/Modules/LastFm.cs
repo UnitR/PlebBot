@@ -19,11 +19,11 @@ namespace PlebBot.Modules
         private readonly LastfmClient _client;
         private readonly BotContext _context;
 
-        public LastFm()
+        public LastFm(BotContext botcontext)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
-            this._context = new BotContext();
+            this._context = botcontext;
         }
 
         //TODO: error thrown for some users (check with unitr)

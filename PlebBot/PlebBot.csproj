@@ -16,14 +16,14 @@
     <None Update="_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-</ItemGroup>
+  </ItemGroup>
 
-<ItemGroup>
+  <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.0" />
-</ItemGroup>
+  </ItemGroup>
 
-<ItemGroup>
-  <ProjectReference Include="..\PlebBot.Data\PlebBot.Data.csproj" />
-</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PlebBot.Data\PlebBot.Data.csproj" />
+  </ItemGroup>
 
 </Project>
