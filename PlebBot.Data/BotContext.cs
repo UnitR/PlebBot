@@ -9,7 +9,7 @@ namespace PlebBot.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("connectionstring");
+            optionsBuilder.UseNpgsql(@"connectionstring");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

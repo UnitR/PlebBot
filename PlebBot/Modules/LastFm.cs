@@ -8,6 +8,7 @@ using Discord;
 using IF.Lastfm.Core.Api;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators.Internal;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
 
@@ -26,7 +27,6 @@ namespace PlebBot.Modules
             this._context = new BotContext();
         }
 
-        //TODO: error thrown for some users (check with unitr)
         [Command]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
@@ -138,21 +138,33 @@ namespace PlebBot.Modules
         //TODO: last.fm user profile picture
         private async Task NowPlaying(string username)
         {
-            var response = await _client.User.GetRecentScrobbles(username, null, 1, 2);
+            try
+            {
+                var response = await _client.User.GetRecentScrobbles(username, null, 1, 2);
+                var tracks = response.Content;
 
-            var msg = new EmbedBuilder()
-                .WithTitle($"Recent tracks for {username}")
-                .WithThumbnailUrl(response.Content[0].Images.Medium.ToString())
-                .WithUrl($"https://www.last.fm/user/{username}")
-                .AddField("**Current:**",
-                    $"{response.Content[0].ArtistName} - {response.Content[0].Name} " +
-                    $"[{response.Content[0].AlbumName}]")
-                .AddField("**Previous:**",
-                    $"{response.Content[1].ArtistName} - {response.Content[1].Name} " +
-                    $"[{response.Content[1].AlbumName}]")
-                .WithColor(Color.DarkBlue);
+                string currAlbum = tracks[0].AlbumName ?? "";
+                string prevAlbum = tracks[1].AlbumName ?? "";
+                string albumArt = (tracks[0].Images.Medium != null) ? tracks[0].Images.Medium.ToString() : "";
 
-            await ReplyAsync("", false, msg);
+                var msg = new EmbedBuilder();
+                msg.WithTitle($"Recent tracks for {username}")
+                    .WithThumbnailUrl(albumArt)
+                    .WithUrl($"https://www.last.fm/user/{username}")
+                    .AddField("**Current:**",
+                        $"{response.Content[0].ArtistName} - {response.Content[0].Name} " +
+                        $"{currAlbum}")
+                    .AddField("**Previous:**",
+                        $"{response.Content[1].ArtistName} - {response.Content[1].Name} " +
+                        $"{prevAlbum}")
+                    .WithColor(Color.DarkBlue);
+
+                await ReplyAsync("", false, msg.Build());
+            }
+            catch (Exception ex)
+            {
+                await Error(ex.Message);
+            }
         }
     }
 }
