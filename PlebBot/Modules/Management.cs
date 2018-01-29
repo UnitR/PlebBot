@@ -1,22 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Discord;
+﻿using System.Threading.Tasks;
 using Discord.Commands;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Preconditions;
 
 namespace PlebBot.Modules
 {
-    class Admin : ModuleBase<SocketCommandContext>
+    class Management : ModuleBase<SocketCommandContext>
     {
         private readonly BotContext _context;
 
-        public Admin(BotContext context)
+        public Management(BotContext context)
         {
             this._context = context;
         }

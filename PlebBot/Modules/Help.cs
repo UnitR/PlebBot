@@ -1,22 +1,18 @@
 ﻿using Discord;
 using Discord.Commands;
-using Microsoft.Extensions.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
+using PlebBot.Helpers;
 
 namespace PlebBot.Modules
 {
     public class Help : ModuleBase<SocketCommandContext>
     {
         private readonly CommandService _service;
-        private readonly IConfigurationRoot _config;
-        private string _prefix;
 
-        public Help(CommandService service, IConfigurationRoot config)
+        public Help(CommandService service)
         {
             _service = service;
-            _config = config;
-            _prefix = _config["prefix"];
         }
 
         [Command("help")]
@@ -35,7 +31,7 @@ namespace PlebBot.Modules
                 {
                     var result = await cmd.CheckPreconditionsAsync(Context);
                     if (result.IsSuccess)
-                        description += $"{_prefix}{cmd.Aliases.First()} - " +
+                        description += $"{cmd.Aliases.First()} - " +
                                        $"*{cmd.Summary}*\n";
                 }
 
@@ -50,7 +46,7 @@ namespace PlebBot.Modules
                 }
                 else if (module.Name == "Help")
                 {
-                    builder.WithFooter($"For more information on a command use {_prefix}help <command>");
+                    builder.WithFooter($"For more information on a command use help <command>");
                 }
             }
 
@@ -63,12 +59,12 @@ namespace PlebBot.Modules
             var builder = new EmbedBuilder();
             var result = _service.Search(Context, command);
 
-
             if (!result.IsSuccess)
             {
-                builder.Color = Color.Red;
-                builder.Title = $"Sorry, I couldn't find a command like **{_prefix}{command}**.";
-                await ReplyAsync("", false, builder.Build());
+                //builder.Color = Color.Red;
+                //builder.Title = $"Sorry, I couldn't find a command like **{_prefix}{command}**.";
+                //await ReplyAsync("", false, builder.Build());
+                await Response.Error(Context, "$\"Sorry, I couldn\'t find a command like **{_prefix}{command}**");
                 return;
             }
 
@@ -79,7 +75,7 @@ namespace PlebBot.Modules
 
                 builder.AddField(x =>
                 {
-                    x.Name = $"{_prefix}{string.Join(", ", cmd.Aliases)}";
+                    x.Name = $"{string.Join(", ", cmd.Aliases)}";
                     x.Value = $"\nParameters:\n" +
                               $"\t{string.Join(", ", cmd.Parameters.Select(p => p.Name))}\n\n" +
                               $"Summary:\n" +

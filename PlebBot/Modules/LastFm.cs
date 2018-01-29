@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators.Internal;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
 using PlebBot.Data.Models;
+using PlebBot.Helpers;
 
 namespace PlebBot.Modules
 {
@@ -40,7 +41,7 @@ namespace PlebBot.Modules
                 }
                 else
                 {
-                    await Error("User not found.");
+                    await Response.Error(Context,"User not found.");
                 }
             }
             else
@@ -53,7 +54,7 @@ namespace PlebBot.Modules
                 }
                 else
                 {
-                    await Error("You haven't linked your last.fm profile.");
+                    await Response.Error(Context, "You haven't linked your last.fm profile.");
                 }
             }
         }
@@ -76,7 +77,7 @@ namespace PlebBot.Modules
                             _context.Update(user);
                             await _context.SaveChangesAsync();
 
-                            await Success("Succesfully updated your last.fm username.");
+                            await Response.Success(Context, "Succesfully updated your last.fm username.");
                         }
                         else
                         {
@@ -89,22 +90,24 @@ namespace PlebBot.Modules
                             _context.Add(user);
                             await _context.SaveChangesAsync();
 
-                            await Success("last.fm username saved. You can now freely use the !fm commands.");
+                            await Response.Success(
+                                Context, "last.fm username saved. You can now freely use the !fm commands.");
                         }
                     }
                     catch (Exception ex)
                     {
-                        await Error("Something has gone terribly wrong. Get on it <@164102776035475458>");
+                        await Response.Error(
+                            Context,"Something has gone terribly wrong. Get on it <@164102776035475458>");
                     }
                 }
                 else
                 {
-                    await Error("User not found.");
+                    await Response.Error(Context, "User not found.");
                 }
             }
             else
             {
-                await Error("You must provide a username.");
+                await Response.Error(Context, "You must provide a username.");
             }
         }
 
@@ -117,25 +120,6 @@ namespace PlebBot.Modules
             return false;
         }
 
-        //TODO: Create an enum for the typical last.fm errors (maybe?)
-        private async Task Error(string message)
-        {
-            var msg = new EmbedBuilder()
-                .AddField("Error", message)
-                .WithColor(Color.DarkRed);
-
-            await ReplyAsync("", false, msg.Build());
-        }
-
-        private async Task Success(string message)
-        {
-            var msg = new EmbedBuilder()
-                .AddField("Success", message)
-                .WithColor(Color.Green);
-
-            await ReplyAsync("", false, msg.Build());
-        }
-
         //TODO: last.fm user profile picture
         private async Task NowPlaying(string username)
         {
@@ -146,7 +130,7 @@ namespace PlebBot.Modules
 
                 string currAlbum = tracks[0].AlbumName ?? "";
                 string prevAlbum = tracks[1].AlbumName ?? "";
-                string albumArt = (tracks[0].Images.Medium != null) ? tracks[0].Images.Medium.ToString() : "";
+                string albumArt = (tracks[0].Images.Large != null) ? tracks[0].Images.Largest.ToString() : "";
 
                 var msg = new EmbedBuilder();
                 msg.WithTitle($"Recent tracks for {username}")
@@ -164,7 +148,7 @@ namespace PlebBot.Modules
             }
             catch (Exception ex)
             {
-                await Error(ex.Message);
+                await Response.Error(Context, ex.Message);
             }
         }
     }

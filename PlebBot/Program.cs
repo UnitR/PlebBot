@@ -18,6 +18,7 @@ namespace PlebBot
         private DiscordSocketClient _client;
         private IServiceProvider _services;
         private IConfigurationRoot _config;
+        private BotContext _context;
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -46,6 +47,8 @@ namespace PlebBot
                 .AddDbContext<BotContext>(options => options.UseNpgsql(_config["connection_string"]))
                 .BuildServiceProvider();
 
+            _context = _services.GetService<BotContext>();
+
             _client = new DiscordSocketClient();
             _client.Log += Log;
             _client.JoinedGuild += JoinGuild;
@@ -73,7 +76,7 @@ namespace PlebBot
             await _commands.AddModuleAsync<Miscellaneous>();
             await _commands.AddModuleAsync<LastFm>();
             await _commands.AddModuleAsync<Help>();
-            await _commands.AddModuleAsync<Admin>();
+            await _commands.AddModuleAsync<Management>();
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
@@ -81,9 +84,13 @@ namespace PlebBot
             var message = messageParam as SocketUserMessage;
             if (message == null) return;
             int argPos = 0;
-            if (!(message.HasStringPrefix(_config["prefix"], ref argPos) ||
-                  message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var context = new SocketCommandContext(_client, message);
+
+            var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == context.Guild.Id.ToString());
+            var prefix = server.Prefix;
+
+            if (!(message.HasStringPrefix(prefix, ref argPos) ||
+                  message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var result = await _commands.ExecuteAsync(context, argPos, _services);
             if (!result.IsSuccess)
             {
@@ -95,24 +102,22 @@ namespace PlebBot
         {
             if (guild == null) return;
 
-            var db = _services.GetService<BotContext>();
-            db.Servers.Add(new Server()
+            _context.Servers.Add(new Server()
             {
                 DiscordId = guild.Id.ToString()
             });
-            await db.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         private async Task LeaveGuild(SocketGuild guild)
         {
             if (guild == null) return;
 
-            var db = _services.GetService<BotContext>();
-            var server = await db.Servers.SingleOrDefaultAsync(s => s.DiscordId == guild.Id.ToString());
+            var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == guild.Id.ToString());
             if (server != null)
             {
-                db.Servers.Remove(server);
-                await db.SaveChangesAsync();
+                _context.Servers.Remove(server);
+                await _context.SaveChangesAsync();
             }
         }
     }
