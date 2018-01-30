@@ -7,6 +7,7 @@ namespace PlebBot.Data
     {
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Server> Servers { get; set; }
+        public virtual DbSet<Role> Roles { get; set; }
 
         public BotContext(DbContextOptions<BotContext> options) : base(options) { }
 

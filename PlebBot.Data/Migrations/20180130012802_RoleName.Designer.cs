@@ -11,9 +11,10 @@ using System;
 namespace PlebBot.Data.Migrations
 {
     [DbContext(typeof(BotContext))]
-    partial class BotContextModelSnapshot : ModelSnapshot
+    [Migration("20180130012802_RoleName")]
+    partial class RoleName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,7 +29,9 @@ namespace PlebBot.Data.Migrations
 
                     b.Property<string>("DiscordId");
 
-                    b.Property<bool>("IsColour");
+                    b.Property<bool>("IsAssignable")
+                        .ValueGeneratedOnAdd()
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name");
 
