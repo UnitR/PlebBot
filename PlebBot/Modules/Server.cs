@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using PlebBot.Data;
 using PlebBot.Data.Models;
@@ -24,7 +23,6 @@ namespace PlebBot.Modules
             this._dbContext = dbContext;
         }
 
-        //TODO: Make sure every server uses its own prefix. But does it even matter if it's only going to be used only in PMCD for a very long time if not forever?
         [Command("prefix")]
         [Summary("Change the command prefix")]
         [ManageServer]
@@ -204,6 +202,5 @@ namespace PlebBot.Modules
                 }
             }
         }
-
     }
 }

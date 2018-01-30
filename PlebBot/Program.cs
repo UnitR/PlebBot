@@ -97,7 +97,7 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var result = await _commands.ExecuteAsync(context, argPos, _services);
-            if (!result.IsSuccess)
+            if (!result.IsSuccess && result.ErrorReason != "Unknown command.")
             {
                 await context.Channel.SendMessageAsync(result.ErrorReason);
             }
