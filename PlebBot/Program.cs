@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PlebBot.Modules;
 using PlebBot.Data;
+using PlebBot.Data.Migrations;
 using PlebBot.Data.Models;
 
 namespace PlebBot
@@ -76,7 +77,8 @@ namespace PlebBot
             await _commands.AddModuleAsync<Miscellaneous>();
             await _commands.AddModuleAsync<LastFm>();
             await _commands.AddModuleAsync<Help>();
-            await _commands.AddModuleAsync<Management>();
+            await _commands.AddModuleAsync<Modules.Server>();
+            await _commands.AddModuleAsync<Modules.Roles>();
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
@@ -92,7 +94,7 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var result = await _commands.ExecuteAsync(context, argPos, _services);
-            if (!result.IsSuccess)
+            if (!result.IsSuccess && result.ErrorReason != "Unknown command.")
             {
                 await context.Channel.SendMessageAsync(result.ErrorReason);
             }
@@ -102,7 +104,7 @@ namespace PlebBot
         {
             if (guild == null) return;
 
-            _context.Servers.Add(new Server()
+            _context.Servers.Add(new Data.Models.Server()
             {
                 DiscordId = guild.Id.ToString()
             });
