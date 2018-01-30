@@ -91,7 +91,7 @@ namespace PlebBot.Modules
                             await _context.SaveChangesAsync();
 
                             await Response.Success(
-                                Context, "last.fm username saved. You can now freely use the !fm commands.");
+                                Context, "last.fm username saved. You can now freely use the `fm` commands.");
                         }
                     }
                     catch (Exception ex)

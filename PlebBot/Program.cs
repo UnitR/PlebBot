@@ -2,13 +2,17 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using System;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PlebBot.Modules;
 using PlebBot.Data;
+using PlebBot.Data.Migrations;
 using PlebBot.Data.Models;
+using Roles = PlebBot.Modules.Roles;
 
 namespace PlebBot
 {
@@ -76,7 +80,8 @@ namespace PlebBot
             await _commands.AddModuleAsync<Miscellaneous>();
             await _commands.AddModuleAsync<LastFm>();
             await _commands.AddModuleAsync<Help>();
-            await _commands.AddModuleAsync<Management>();
+            await _commands.AddModulesAsync(Assembly.GetAssembly(typeof(Admin)));
+            await _commands.AddModulesAsync(Assembly.GetAssembly(typeof(Roles)));
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
@@ -102,7 +107,7 @@ namespace PlebBot
         {
             if (guild == null) return;
 
-            _context.Servers.Add(new Server()
+            _context.Servers.Add(new Data.Models.Server()
             {
                 DiscordId = guild.Id.ToString()
             });
