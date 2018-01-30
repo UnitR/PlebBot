@@ -13,6 +13,7 @@ using PlebBot.Preconditions;
 namespace PlebBot.Modules
 {
     [Group("s")]
+    [Summary("Manage server settings")]
     [ManageServer]
     public class Admin : ModuleBase<SocketCommandContext>
     {
@@ -42,6 +43,7 @@ namespace PlebBot.Modules
     }
 
     [Group("roles")]
+    [Summary("Manage server roles")]
     public class Roles : ModuleBase<SocketCommandContext>
     {
         protected readonly BotContext _dbContext;
