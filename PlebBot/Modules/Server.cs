@@ -165,25 +165,33 @@ namespace PlebBot.Modules
                         r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
                     if (roleResult != null)
                     {
-                        var assign = Context.Guild.Roles.SingleOrDefault(
-                            r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
                         var userRoles = (Context.User as IGuildUser).RoleIds;
-                        var colours = roles.Where(r => r.IsColour).ToList();
-                        foreach (var colour in colours)
+                        if (!userRoles.Contains(ulong.Parse(roleResult.DiscordId)))
                         {
-                            if (userRoles.Contains(ulong.Parse(colour.DiscordId)))
+                            var assign = Context.Guild.Roles.SingleOrDefault(
+                                r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
+                            var colours = roles.Where(r => r.IsColour).ToList();
+                            foreach (var colour in colours)
                             {
-                                var unassign =
-                                    Context.Guild.Roles.SingleOrDefault(
-                                        r => String.Equals(
-                                            r.Id.ToString(), colour.DiscordId, StringComparison.CurrentCultureIgnoreCase));
+                                if (userRoles.Contains(ulong.Parse(colour.DiscordId)))
+                                {
+                                    var unassign =
+                                        Context.Guild.Roles.SingleOrDefault(
+                                            r => String.Equals(
+                                                r.Id.ToString(), colour.DiscordId,
+                                                StringComparison.CurrentCultureIgnoreCase));
 
-                                await (Context.User as IGuildUser).RemoveRoleAsync(unassign);
+                                    await (Context.User as IGuildUser).RemoveRoleAsync(unassign);
+                                }
                             }
-                        }
 
-                        await (Context.User as IGuildUser).AddRoleAsync(assign);
-                        await Response.Success(Context, $"Good job! You managed to get the '{assign.Name}' role!");
+                            await (Context.User as IGuildUser).AddRoleAsync(assign);
+                            await Response.Success(Context, $"Good job! You managed to get the '{assign.Name}' role!");
+                        }
+                        else
+                        {
+                            await Response.Error(Context, "You already have this role assigned to you.");
+                        }
                     }
                     else
                     {
@@ -195,7 +203,6 @@ namespace PlebBot.Modules
                     await Response.Error(Context, "There are no self-assignable roles for the server.");
                 }
             }
-
         }
 
     }
