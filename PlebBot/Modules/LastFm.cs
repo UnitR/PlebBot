@@ -133,15 +133,15 @@ namespace PlebBot.Modules
                 string albumArt = (tracks[0].Images.Large != null) ? tracks[0].Images.Largest.ToString() : "";
 
                 var msg = new EmbedBuilder();
+                var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
+                var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
+                if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
+                if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
                 msg.WithTitle($"Recent tracks for {username}")
                     .WithThumbnailUrl(albumArt)
                     .WithUrl($"https://www.last.fm/user/{username}")
-                    .AddField("**Current:**",
-                        $"{response.Content[0].ArtistName} - {response.Content[0].Name} " +
-                        $"[{currAlbum}]")
-                    .AddField("**Previous:**",
-                        $"{response.Content[1].ArtistName} - {response.Content[1].Name} " +
-                        $"[{prevAlbum}]")
+                    .AddField("**Current:**", currField)
+                    .AddField("**Previous:**", prevField)
                     .WithColor(Color.DarkBlue);
 
                 await ReplyAsync("", false, msg.Build());
