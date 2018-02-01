@@ -21,7 +21,7 @@ namespace PlebBot.Modules
 
         [Command("bless")]
         [Summary("Blessed be the rains down in Africa")]
-        public async Task Bless(SocketUser user = null)
+        public async Task Bless([Summary("User to bless the rains with")] SocketUser user = null)
         {
             if (user != null)
             {
@@ -66,7 +66,7 @@ namespace PlebBot.Modules
         }
 
         //choose a random element from a list and send the result
-        private async Task PickRandom(List<string> options)
+        private async Task PickRandom(IReadOnlyList<string> options)
         {
             var select = new Random().Next(0, options.Count);
             var response = new EmbedBuilder()

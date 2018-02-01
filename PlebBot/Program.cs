@@ -76,9 +76,9 @@ namespace PlebBot
             _client.MessageReceived += HandleCommandAsync;
             await _commands.AddModuleAsync<Miscellaneous>();
             await _commands.AddModuleAsync<LastFm>();
-            await _commands.AddModulesAsync(Assembly.GetAssembly(typeof(Admin)));
-            await _commands.AddModulesAsync(Assembly.GetAssembly(typeof(Roles)));
-            //await _commands.AddModuleAsync<Help>();
+            await _commands.AddModuleAsync<Roles>();
+            await _commands.AddModuleAsync<Admin>();
+            await _commands.AddModuleAsync<Help>();
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
@@ -94,7 +94,7 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var result = await _commands.ExecuteAsync(context, argPos, _services);
-            if (!result.IsSuccess)
+            if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)
             {
                 await context.Channel.SendMessageAsync(result.ErrorReason);
             }

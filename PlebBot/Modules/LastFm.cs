@@ -16,7 +16,8 @@ using PlebBot.Helpers;
 
 namespace PlebBot.Modules
 {
-    [Group("fm")]
+    [Name("last.fm")]
+    [Alias("fm")]
     class LastFm : ModuleBase<SocketCommandContext>
     {
         private readonly LastfmClient _client;
@@ -61,9 +62,9 @@ namespace PlebBot.Modules
 
         [Command("set")]
         [Summary("Link your last.fm username to your profile")]
-        public async Task SaveUser([Summary("Your last.fm username")] string username = "")
+        public async Task SaveUser([Summary("Your last.fm username")] string username)
         {
-            if (username != string.Empty)
+            if (username != null)
             {
                 if (await CheckIfUserExists(username))
                 {
