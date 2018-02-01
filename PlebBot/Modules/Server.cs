@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using PlebBot.Data;
 using PlebBot.Data.Models;
