@@ -1,7 +1,10 @@
-﻿using Discord;
+﻿using System;
+using Discord;
 using Discord.Commands;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using PlebBot.Data;
 using PlebBot.Helpers;
 
 namespace PlebBot.Modules
@@ -9,10 +12,12 @@ namespace PlebBot.Modules
     public class Help : ModuleBase<SocketCommandContext>
     {
         private readonly CommandService _service;
+        private readonly BotContext _dbContext;
 
-        public Help(CommandService service)
+        public Help(CommandService service, BotContext dbContext)
         {
             _service = service;
+            this._dbContext = dbContext;
         }
 
         [Command("help")]
@@ -26,27 +31,31 @@ namespace PlebBot.Modules
 
             foreach (var module in _service.Modules)
             {
-                string description = null;
-                foreach (var cmd in module.Commands)
+                if (!String.Equals(module.Name, "help", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    var result = await cmd.CheckPreconditionsAsync(Context);
-                    if (result.IsSuccess)
-                        description += $"{cmd.Aliases.First()} - " +
-                                       $"*{cmd.Summary}*\n";
-                }
+                    string description = null;
 
-                if (!string.IsNullOrWhiteSpace(description) && module.Name != "Help")
-                {
-                    builder.AddField(x =>
+                    foreach (var cmd in module.Commands)
                     {
-                        x.Name = module.Name;
-                        x.Value = description;
-                        x.IsInline = false;
-                    });
+                        var result = await cmd.CheckPreconditionsAsync(Context);
+                        if (result.IsSuccess)
+                            description += $"{cmd.Aliases.First()} - " +
+                                           $"*{cmd.Summary}*\n";
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(description) && module.Name != "Help")
+                    {
+                        builder.AddField(x =>
+                        {
+                            x.Name = module.Name;
+                            x.Value = description;
+                            x.IsInline = false;
+                        });
+                    }
                 }
-                else if (module.Name == "Help")
+                else
                 {
-                    builder.WithFooter($"For more information on a command use help <command>");
+                    builder.WithFooter($"For more information on a command use `help <command>`");
                 }
             }
 
@@ -61,10 +70,7 @@ namespace PlebBot.Modules
 
             if (!result.IsSuccess)
             {
-                //builder.Color = Color.Red;
-                //builder.Title = $"Sorry, I couldn't find a command like **{_prefix}{command}**.";
-                //await ReplyAsync("", false, builder.Build());
-                await Response.Error(Context, "$\"Sorry, I couldn\'t find a command like **{_prefix}{command}**");
+                await Response.Error(Context, $"\"Sorry, I couldn\'t find a command like `{command}`");
                 return;
             }
 

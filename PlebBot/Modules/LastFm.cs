@@ -20,13 +20,13 @@ namespace PlebBot.Modules
     class LastFm : ModuleBase<SocketCommandContext>
     {
         private readonly LastfmClient _client;
-        private readonly BotContext _context;
+        private readonly BotContext _dbContext;
 
-        public LastFm(BotContext botcontext)
+        public LastFm(BotContext dbContext)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
-            this._context = botcontext;
+            this._dbContext = dbContext;
         }
 
         [Command]
@@ -46,7 +46,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await _context.Users.SingleOrDefaultAsync(
+                var user = await _dbContext.Users.SingleOrDefaultAsync(
                     u => u.DiscordId == Context.User.Id.ToString());
                 if (user != null)
                 {
@@ -69,13 +69,13 @@ namespace PlebBot.Modules
                 {
                     try
                     {
-                        var user = await _context.Users.SingleOrDefaultAsync(
+                        var user = await _dbContext.Users.SingleOrDefaultAsync(
                             u => u.DiscordId == Context.User.Id.ToString());
                         if (user != null)
                         {
                             user.LastFm = username;
-                            _context.Update(user);
-                            await _context.SaveChangesAsync();
+                            _dbContext.Update(user);
+                            await _dbContext.SaveChangesAsync();
 
                             await Response.Success(Context, "Succesfully updated your last.fm username.");
                         }
@@ -87,8 +87,8 @@ namespace PlebBot.Modules
                                 LastFm = username
                             };
 
-                            _context.Add(user);
-                            await _context.SaveChangesAsync();
+                            _dbContext.Add(user);
+                            await _dbContext.SaveChangesAsync();
 
                             await Response.Success(
                                 Context, "last.fm username saved. You can now freely use the `fm` commands.");
@@ -97,7 +97,8 @@ namespace PlebBot.Modules
                     catch (Exception ex)
                     {
                         await Response.Error(
-                            Context,"Something has gone terribly wrong. Get on it <@164102776035475458>");
+                            Context,$"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
+                                    $"{ex.Message}");
                     }
                 }
                 else

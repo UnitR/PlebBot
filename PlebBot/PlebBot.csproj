@@ -26,4 +26,8 @@
     <ProjectReference Include="..\PlebBot.Data\PlebBot.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TypeReaders\" />
+  </ItemGroup>
+
 </Project>

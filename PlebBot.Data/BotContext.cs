@@ -20,5 +20,11 @@ namespace PlebBot.Data
             modelBuilder.HasDefaultSchema("public");
             base.OnModelCreating(modelBuilder);
         }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.EnableSensitiveDataLogging();
+            base.OnConfiguring(optionsBuilder);
+        }
     }
 }

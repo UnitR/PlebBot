@@ -141,7 +141,7 @@ namespace PlebBot.Modules
                     _dbContext.Roles.RemoveRange(remove);
                     await _dbContext.SaveChangesAsync();
 
-                    await Response.Success(Context, $"The '{remove.Name}' role has been successfully" +
+                    await Response.Success(Context, $"The '{remove.Name}' role has been successfully " +
                                                     $"removed from the self-assignable list.");
                 }
                 else

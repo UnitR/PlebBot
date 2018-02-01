@@ -3,15 +3,12 @@ using Discord.WebSocket;
 using Discord.Commands;
 using System;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PlebBot.Modules;
 using PlebBot.Data;
-using PlebBot.Data.Migrations;
-using PlebBot.Data.Models;
 using Roles = PlebBot.Modules.Roles;
 
 namespace PlebBot
@@ -79,9 +76,9 @@ namespace PlebBot
             _client.MessageReceived += HandleCommandAsync;
             await _commands.AddModuleAsync<Miscellaneous>();
             await _commands.AddModuleAsync<LastFm>();
-            await _commands.AddModuleAsync<Help>();
             await _commands.AddModulesAsync(Assembly.GetAssembly(typeof(Admin)));
             await _commands.AddModulesAsync(Assembly.GetAssembly(typeof(Roles)));
+            //await _commands.AddModuleAsync<Help>();
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
