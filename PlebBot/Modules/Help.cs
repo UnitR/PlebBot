@@ -47,12 +47,12 @@ namespace PlebBot.Modules
                                 foreach (var param in parameters)
                                 {
                                     if (param.IsOptional)
-                                        description += $"({param.Name})";
+                                        description += $"({param.Name}) ";
                                     else
-                                        description += $"[{param.Name}]";
+                                        description += $"[{param.Name}] ";
                                 }
                             }
-                            description += $" - *{cmd.Summary}*\n";
+                            description += $"- *{cmd.Summary}*\n";
                         }
                     }
 
