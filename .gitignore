@@ -261,3 +261,10 @@ __pycache__/
 *.pyc
 /FB_IMG_1512402202612.jpg
 /PlebBot/_config.json.backup
+
+### Vim ###
+# swap
+.sw[a-p]
+.*.sw[a-p]
+# session
+Session.vim
