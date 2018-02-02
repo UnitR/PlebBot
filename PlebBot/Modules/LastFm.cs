@@ -183,7 +183,7 @@ namespace PlebBot.Modules
             var i = 1;
             foreach (var album in albums)
             {
-                list += $"{i}. {album.Name}\n";
+                list += $"{i}. {album.ArtistName} - *{album.Name}* [{album.PlayCount} scrobbles]\n";
                 i++;
             }
 
@@ -197,7 +197,7 @@ namespace PlebBot.Modules
             var i = 1;
             foreach (var artist in artists)
             {
-                list += $"{i}. {artist.Name}\n";
+                list += $"{i}. {artist.Name} [{artist.PlayCount} scrobbles]\n";
                 i++;
             }
 
