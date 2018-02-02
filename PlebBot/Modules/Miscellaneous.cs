@@ -38,6 +38,7 @@ namespace PlebBot.Modules
         public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choice_list)
         {
             string[] options = choice_list.Split(',');
+            options = options.Where((val, idx) => val.Trim() != "").ToArray();
             if (options.Length > 1)
             {
                 await PickRandom(options);
