@@ -115,8 +115,8 @@ namespace PlebBot.Modules
         [Command("top artists")]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
-            [Summary("Number of artists to show. Maximum 25. Default is 10.")] string limit = "10",
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Number of artists to show. Maximum 25. Default is 10.")] string limit = "10",
             [Summary("Your last.fm username")] string username = "")
         {
             if (username != String.Empty)
@@ -155,8 +155,8 @@ namespace PlebBot.Modules
         [Command("top albums")]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums(
-            [Summary("Number of albums to show. Maximum 50. Default is 10.")] string limit = "10",
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Number of albums to show. Maximum 50. Default is 10.")] string limit = "10",
             [Summary("Your last.fm username")] string username = "")
         {
             if (username != String.Empty)
@@ -195,8 +195,8 @@ namespace PlebBot.Modules
         [Command("top tracks")]
         [Summary("Get the top tracks for a user")]
         public async Task TopTracks(
-            [Summary("Number of tracks to show. Maximum 50. Default is 10.")] string limit = "10",
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Number of tracks to show. Maximum 50. Default is 10.")] string limit = "10",
             [Summary("Your last.fm username")] string username = "")
         {
             if (username != String.Empty)
