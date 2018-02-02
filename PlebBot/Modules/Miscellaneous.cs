@@ -35,32 +35,13 @@ namespace PlebBot.Modules
 
         [Command("choose")]
         [Summary("Makes a decision for you")]
-        public async Task Choose([Summary("The options you want to choose from")] params string[] choices)
+        public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choice_list)
         {
-            var options = new List<string>();
-            if (choices.Length > 1)
+            string[] options = choice_list.Split(',');
+            if (options.Length > 1)
             {
-                for(int i = 0; i < choices.Length; i++)
-                {
-                    if (choices[i].EndsWith(','))
-                    {
-                        choices[i] = choices[i].Remove(choices[i].Length - 1);
-                    }
-                    options.Add(choices[i]);
-                }
                 await PickRandom(options);
-            }
-            else if (choices.Length == 1 && choices[0].Contains(","))
-            {
-                options = choices[0].Split(',').ToList();
-                if (options.Contains(""))
-                {
-                    options.Remove("");
-                }
-                await PickRandom(options);
-            }
-            else
-            {
+            } else {
                 await Response.Error(Context, "You must provide a comma-separated list of options.");
             }
         }
