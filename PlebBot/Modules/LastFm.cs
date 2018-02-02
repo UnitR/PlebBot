@@ -1,36 +1,32 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
 using Discord.Commands;
 using System.Threading.Tasks;
 using Discord;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.ExpressionTranslators.Internal;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
+using Newtonsoft.Json;
+using System.Net;
 
 namespace PlebBot.Modules
 {
     [Name("last.fm")]
     [Alias("fm")]
-    class LastFm : ModuleBase<SocketCommandContext>
+    public class LastFm : ModuleBase<SocketCommandContext>
     {
         private readonly LastfmClient _client;
         private readonly BotContext _dbContext;
+        private readonly string _lastFmKey;
 
         public LastFm(BotContext dbContext)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
+            this._lastFmKey = config["tokens:lastfm_key"];
             this._dbContext = dbContext;
         }
 
@@ -119,6 +115,7 @@ namespace PlebBot.Modules
         [Command("top artists")]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
+            [Summary("Number of artists to show. Maximum 25. Default is 10.")] string limit = "10",
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Your last.fm username")] string username = "")
         {
@@ -126,39 +123,13 @@ namespace PlebBot.Modules
             {
                 if (await CheckIfUserExistsAsync(username))
                 {
-                    var timeSpan = DetermineSpan(span);
-                    await GetTopArtistsAsync(username, timeSpan);
-                }
-                else
-                {
-                    await Response.Error(Context, LastFmError.NotFound);
-                }
-            }
-            else
-            {
-                var user = await DbFindUserAsync();
-                if (user != null)
-                {
-                    var timeSpan = DetermineSpan(span);
-                    await GetTopArtistsAsync(user.LastFm, timeSpan);
-                    return;
-                }
-                await Response.Error(Context, LastFmError.NotLinked);
-            }
-        }
-
-        [Command("top albums")]
-        [Summary("Get the top albums for a user")]
-        public async Task TopAlbums(
-            [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
-            [Summary("Your last.fm username")] string username = "")
-        {
-            if (username != String.Empty)
-            {
-                if (await CheckIfUserExistsAsync(username))
-                {
-                    var timeSpan = DetermineSpan(span);
-                    await GetTopAlbumsAsync(username, timeSpan);
+                    if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
+                    {
+                        var timeSpan = DetermineSpan(span);
+                        await GetTopArtistsAsync(username, timeSpan, lim);
+                        return;
+                    }
+                    await Response.Error(Context, LastFmError.Limit);
                     return;
                 }
                 await Response.Error(Context, LastFmError.NotFound);
@@ -168,17 +139,100 @@ namespace PlebBot.Modules
                 var user = await DbFindUserAsync();
                 if (user != null)
                 {
-                    var timeSpan = DetermineSpan(span);
-                    await GetTopAlbumsAsync(user.LastFm, timeSpan);
+                    if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
+                    {
+                        var timeSpan = DetermineSpan(span);
+                        await GetTopArtistsAsync(user.LastFm, timeSpan, lim);
+                        return;
+                    }
+                    await Response.Error(Context, LastFmError.Limit);
                     return;
                 }
                 await Response.Error(Context, LastFmError.NotLinked);
             }
         }
 
-        private async Task GetTopAlbumsAsync(string username, LastStatsTimeSpan span)
+        [Command("top albums")]
+        [Summary("Get the top albums for a user")]
+        public async Task TopAlbums(
+            [Summary("Number of albums to show. Maximum 50. Default is 10.")] string limit = "10",
+            [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Your last.fm username")] string username = "")
         {
-            var albums = await _client.User.GetTopAlbums(username, span, 1, 10);
+            if (username != String.Empty)
+            {
+                if (await CheckIfUserExistsAsync(username))
+                {
+                    if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
+                    {
+                        var timeSpan = DetermineSpan(span);
+                        await GetTopAlbumsAsync(username, timeSpan, lim);
+                        return;
+                    }
+                    await Response.Error(Context, LastFmError.Limit);
+                    return;
+                }
+                await Response.Error(Context, LastFmError.NotFound);
+            }
+            else
+            {
+                var user = await DbFindUserAsync();
+                if (user != null)
+                {
+                    if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
+                    {
+                        var timeSpan = DetermineSpan(span);
+                        await GetTopAlbumsAsync(user.LastFm, timeSpan, lim);
+                        return;
+                    }
+                    await Response.Error(Context, LastFmError.Limit);
+                    return;
+                }
+                await Response.Error(Context, LastFmError.NotLinked);
+            }
+        }
+
+        [Command("top tracks")]
+        [Summary("Get the top tracks for a user")]
+        public async Task TopTracks(
+            [Summary("Number of tracks to show. Maximum 50. Default is 10.")] string limit = "10",
+            [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Your last.fm username")] string username = "")
+        {
+            if (username != String.Empty)
+            {
+                if (await CheckIfUserExistsAsync(username))
+                {
+                    if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
+                    {
+                        await SendTopTracks(span, username, lim);
+                        return;
+                    }
+                    await Response.Error(Context, LastFmError.Limit);
+                    return;
+                }
+                await Response.Error(Context, LastFmError.NotFound);
+            }
+            else
+            {
+                var user = await DbFindUserAsync();
+                if (user != null)
+                {
+                    if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
+                    {
+                        await SendTopTracks(span, user.LastFm, lim);
+                        return;
+                    }
+                    await Response.Error(Context, LastFmError.Limit);
+                    return;
+                }
+                await Response.Error(Context, LastFmError.NotLinked);
+            }
+        }
+
+        private async Task GetTopAlbumsAsync(string username, LastStatsTimeSpan span, int limit)
+        {
+            var albums = await _client.User.GetTopAlbums(username, span, 1, limit);
             var list = "";
             var i = 1;
             foreach (var album in albums)
@@ -190,9 +244,9 @@ namespace PlebBot.Modules
             await BuildTopAsync(list, username, "albums", span);
         }
 
-        private async Task GetTopArtistsAsync(string username, LastStatsTimeSpan span)
+        private async Task GetTopArtistsAsync(string username, LastStatsTimeSpan span, int limit)
         {
-            var artists = await _client.User.GetTopArtists(username, span, 1, 10);
+            var artists = await _client.User.GetTopArtists(username, span, 1, limit);
             var list = "";
             var i = 1;
             foreach (var artist in artists)
@@ -204,11 +258,55 @@ namespace PlebBot.Modules
             await BuildTopAsync(list, username, "artists", span);
         }
 
+        //send the embed with the top tracks
+        private async Task SendTopTracks(string span, string username, int limit)
+        {
+            var timeSpan = "overall";
+            switch (span.ToLower())
+            {
+                case "week":
+                    timeSpan = "7day";
+                    break;
+                case "month":
+                    timeSpan = "1month";
+                    break;
+                case "year":
+                    timeSpan = "12month";
+                    break;
+            }
+            var list = await GetTopTracksAsync(username, timeSpan, limit);
+            var time = DetermineSpan(span);
+            await BuildTopAsync(list, username, "tracks", time);
+
+        }
+
+        private async Task<string> GetTopTracksAsync(string username, string span, int limit)
+        {
+            var url =
+                $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
+                $"&limit={limit}&api_key={_lastFmKey}&format=json";
+            var json = "";
+            using (WebClient wc = new WebClient())
+            {
+                json = await wc.DownloadStringTaskAsync(url);
+            }
+            dynamic response = JsonConvert.DeserializeObject(json);
+            var list = "";
+            dynamic track;
+            for (int i = 0; i < limit; i++)
+            {
+                track = response.toptracks.track[i];
+                list += $"{i + 1}. {track.artist.name} - *{track.name}* [{track.playcount} scrobbles]\n";
+            }
+
+            return list;
+        }
+
         //determines the time span used for the chart
         private LastStatsTimeSpan DetermineSpan(string span)
         {
             LastStatsTimeSpan timeSpan = LastStatsTimeSpan.Overall;
-            switch (span)
+            switch (span.ToLower())
             {
                 case "week":
                     timeSpan = LastStatsTimeSpan.Week;
@@ -219,10 +317,10 @@ namespace PlebBot.Modules
                 case "year":
                     timeSpan = LastStatsTimeSpan.Year;
                     break;
-                case "":
-                    break;
-                case "overall":
-                    break;
+                //case "":
+                //    break;
+                //case "overall":
+                //    break;
             }
 
             return timeSpan;
@@ -297,5 +395,6 @@ namespace PlebBot.Modules
         public static string NotFound => "User not found.";
         public static string NotLinked => "You haven't linked your last.fm profile.";
         public static string InvalidSpan => "Invalid time span provided.";
+        public static string Limit => "Check the given limit and try again.";
     }
 }
