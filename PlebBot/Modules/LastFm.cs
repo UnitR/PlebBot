@@ -40,10 +40,6 @@ namespace PlebBot.Modules
                 {
                     await NowPlayingAsync(username);
                 }
-                else
-                {
-                    await Response.Error(Context, LastFmError.NotFound);
-                }
             }
             else
             {
@@ -101,10 +97,6 @@ namespace PlebBot.Modules
                                     $"{ex.Message}");
                     }
                 }
-                else
-                {
-                    await Response.Error(Context, "User not found.");
-                }
             }
             else
             {
@@ -130,9 +122,7 @@ namespace PlebBot.Modules
                         return;
                     }
                     await Response.Error(Context, LastFmError.Limit);
-                    return;
                 }
-                await Response.Error(Context, LastFmError.NotFound);
             }
             else
             {
@@ -170,9 +160,7 @@ namespace PlebBot.Modules
                         return;
                     }
                     await Response.Error(Context, LastFmError.Limit);
-                    return;
                 }
-                await Response.Error(Context, LastFmError.NotFound);
             }
             else
             {
@@ -209,9 +197,7 @@ namespace PlebBot.Modules
                         return;
                     }
                     await Response.Error(Context, LastFmError.Limit);
-                    return;
                 }
-                await Response.Error(Context, LastFmError.NotFound);
             }
             else
             {
@@ -285,17 +271,16 @@ namespace PlebBot.Modules
             var url =
                 $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
                 $"&limit={limit}&api_key={_lastFmKey}&format=json";
-            var json = "";
+            string json;
             using (WebClient wc = new WebClient())
             {
                 json = await wc.DownloadStringTaskAsync(url);
             }
             dynamic response = JsonConvert.DeserializeObject(json);
             var list = "";
-            dynamic track;
             for (int i = 0; i < limit; i++)
             {
-                track = response.toptracks.track[i];
+                dynamic track = response.toptracks.track[i];
                 list += $"{i + 1}. {track.artist.name} - *{track.name}* [{track.playcount} scrobbles]\n";
             }
 
@@ -317,10 +302,6 @@ namespace PlebBot.Modules
                 case "year":
                     timeSpan = LastStatsTimeSpan.Year;
                     break;
-                //case "":
-                //    break;
-                //case "overall":
-                //    break;
             }
 
             return timeSpan;
@@ -341,9 +322,18 @@ namespace PlebBot.Modules
         private async Task<bool> CheckIfUserExistsAsync(string username)
         {
             var response = await _client.User.GetInfoAsync(username);
-            if (response.Success && response.Content.Id != "")
-                return true;
+            if (response.Success)
+            {
+                if (response.Content.Id != "")
+                {
+                    if (response.Content.Playcount > 0)
+                        return true;
 
+                    await Response.Error(Context, "The user hasn't scrobbled any tracks.");
+                    return false;
+                }
+            }
+            await Response.Error(Context, LastFmError.NotFound);
             return false;
         }
 

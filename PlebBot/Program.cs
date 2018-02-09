@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using PlebBot.Modules;
 using PlebBot.Data;
-using Roles = PlebBot.Modules.Roles;
 
 namespace PlebBot
 {
@@ -94,7 +94,7 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
             var result = await _commands.ExecuteAsync(context, argPos, _services);
-            if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)
+            if (!result.IsSuccess && result.Error != CommandError.UnknownCommand && result.Error != CommandError.BadArgCount)
             {
                 await context.Channel.SendMessageAsync(result.ErrorReason);
             }
