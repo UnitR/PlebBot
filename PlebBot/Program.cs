@@ -13,7 +13,7 @@ using PlebBot.Data;
 
 namespace PlebBot
 {
-    public class Program
+    public partial class Program
     {
         private CommandService _commands;
         private DiscordSocketClient _client;
@@ -51,9 +51,12 @@ namespace PlebBot
             _context = _services.GetService<BotContext>();
 
             _client = new DiscordSocketClient();
+            await _client.SetGameAsync("top 40 hits");
+
             _client.Log += Log;
-            _client.JoinedGuild += JoinGuild;
-            _client.LeftGuild += LeaveGuild;
+            _client.JoinedGuild += HandleJoinGuildAsync;
+            _client.LeftGuild += HandleLeaveGuildAsync;
+            _client.MessageDeleted += HandleMessageDeletedAsync;
 
             _commands = new CommandService();
             await InstallCommandsAsync();
@@ -79,48 +82,6 @@ namespace PlebBot
             await _commands.AddModuleAsync<Roles>();
             await _commands.AddModuleAsync<Admin>();
             await _commands.AddModuleAsync<Help>();
-        }
-
-        private async Task HandleCommandAsync(SocketMessage messageParam)
-        {
-            var message = messageParam as SocketUserMessage;
-            if (message == null) return;
-            int argPos = 0;
-            var context = new SocketCommandContext(_client, message);
-
-            var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == context.Guild.Id.ToString());
-            var prefix = server.Prefix;
-
-            if (!(message.HasStringPrefix(prefix, ref argPos) ||
-                  message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
-            var result = await _commands.ExecuteAsync(context, argPos, _services);
-            if (!result.IsSuccess && result.Error != CommandError.UnknownCommand && result.Error != CommandError.BadArgCount)
-            {
-                await context.Channel.SendMessageAsync(result.ErrorReason);
-            }
-        }
-
-        private async Task JoinGuild(SocketGuild guild)
-        {
-            if (guild == null) return;
-
-            _context.Servers.Add(new Data.Models.Server()
-            {
-                DiscordId = guild.Id.ToString()
-            });
-            await _context.SaveChangesAsync();
-        }
-
-        private async Task LeaveGuild(SocketGuild guild)
-        {
-            if (guild == null) return;
-
-            var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == guild.Id.ToString());
-            if (server != null)
-            {
-                _context.Servers.Remove(server);
-                await _context.SaveChangesAsync();
-            }
         }
     }
 }
