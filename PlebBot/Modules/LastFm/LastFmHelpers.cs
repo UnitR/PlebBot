@@ -82,6 +82,12 @@ namespace PlebBot.Modules
                 case "month":
                     timeSpan = "1month";
                     break;
+                case "3months":
+                    timeSpan = "3month";
+                    break;
+                case "6months":
+                    timeSpan = "6month";
+                    break;
                 case "year":
                     timeSpan = "12month";
                     break;
@@ -89,7 +95,6 @@ namespace PlebBot.Modules
             var list = await GetTopTracksAsync(username, timeSpan, limit);
             var time = DetermineSpan(span);
             await BuildTopAsync(list, username, "tracks", time);
-
         }
 
         private async Task<string> GetTopTracksAsync(string username, string span, int limit)
@@ -124,6 +129,12 @@ namespace PlebBot.Modules
                     break;
                 case "month":
                     timeSpan = LastStatsTimeSpan.Month;
+                    break;
+                case "3months":
+                    timeSpan = LastStatsTimeSpan.Quarter;
+                    break;
+                case "6months":
+                    timeSpan = LastStatsTimeSpan.Half;
                     break;
                 case "year":
                     timeSpan = LastStatsTimeSpan.Year;
