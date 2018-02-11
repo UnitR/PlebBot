@@ -268,3 +268,4 @@ __pycache__/
 .*.sw[a-p]
 # session
 Session.vim
+/PlebBot/PlebBot.csproj.DotSettings

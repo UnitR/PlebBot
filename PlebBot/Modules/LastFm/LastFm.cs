@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Discord.Commands;
 using System.Threading.Tasks;
 using Discord;
@@ -11,26 +12,32 @@ using PlebBot.Data.Models;
 using PlebBot.Helpers;
 using Newtonsoft.Json;
 using System.Net;
+using Google.Apis.Services;
+using Google.Apis.YouTube.v3;
 
 namespace PlebBot.Modules
 {
-    [Name("last.fm")]
-    [Alias("fm")]
-    public class LastFm : ModuleBase<SocketCommandContext>
+    public partial class LastFm : ModuleBase<SocketCommandContext>
     {
         private readonly LastfmClient _client;
         private readonly BotContext _dbContext;
         private readonly string _lastFmKey;
+        private readonly YouTubeService _ytClient;
 
         public LastFm(BotContext dbContext)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
             this._lastFmKey = config["tokens:lastfm_key"];
+            this._ytClient = new YouTubeService(new BaseClientService.Initializer()
+            {
+                ApiKey = config["tokens:yt_key"],
+                ApplicationName = this.GetType().ToString()
+            });
             this._dbContext = dbContext;
         }
 
-        [Command]
+        [Command("fm")]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
         {
@@ -55,7 +62,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("set")]
+        [Command("fm set")]
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
         {
@@ -104,7 +111,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("top artists")]
+        [Command("fm top artists")]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -142,7 +149,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("top albums")]
+        [Command("fm top albums")]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -180,7 +187,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("top tracks")]
+        [Command("fm top tracks")]
         [Summary("Get the top tracks for a user")]
         public async Task TopTracks(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -216,175 +223,27 @@ namespace PlebBot.Modules
             }
         }
 
-        private async Task GetTopAlbumsAsync(string username, LastStatsTimeSpan span, int limit)
+        [Command("fmyt")]
+        [Summary("Send a YouTube link to your current scrobble")]
+        public async Task YtLink([Summary("Your last.fm username")] string username = "")
         {
-            var albums = await _client.User.GetTopAlbums(username, span, 1, limit);
-            var list = "";
-            var i = 1;
-            foreach (var album in albums)
+            if (username != String.Empty)
             {
-                list += $"{i}. {album.ArtistName} - *{album.Name}* [{album.PlayCount} scrobbles]\n";
-                i++;
-            }
-
-            await BuildTopAsync(list, username, "albums", span);
-        }
-
-        private async Task GetTopArtistsAsync(string username, LastStatsTimeSpan span, int limit)
-        {
-            var artists = await _client.User.GetTopArtists(username, span, 1, limit);
-            var list = "";
-            var i = 1;
-            foreach (var artist in artists)
-            {
-                list += $"{i}. {artist.Name} [{artist.PlayCount} scrobbles]\n";
-                i++;
-            }
-
-            await BuildTopAsync(list, username, "artists", span);
-        }
-
-        //send the embed with the top tracks
-        private async Task SendTopTracks(string span, string username, int limit)
-        {
-            var timeSpan = "overall";
-            switch (span.ToLower())
-            {
-                case "week":
-                    timeSpan = "7day";
-                    break;
-                case "month":
-                    timeSpan = "1month";
-                    break;
-                case "year":
-                    timeSpan = "12month";
-                    break;
-            }
-            var list = await GetTopTracksAsync(username, timeSpan, limit);
-            var time = DetermineSpan(span);
-            await BuildTopAsync(list, username, "tracks", time);
-
-        }
-
-        private async Task<string> GetTopTracksAsync(string username, string span, int limit)
-        {
-            var url =
-                $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
-                $"&limit={limit}&api_key={_lastFmKey}&format=json";
-            string json;
-            using (WebClient wc = new WebClient())
-            {
-                json = await wc.DownloadStringTaskAsync(url);
-            }
-            dynamic response = JsonConvert.DeserializeObject(json);
-            var list = "";
-            for (int i = 0; i < limit; i++)
-            {
-                dynamic track = response.toptracks.track[i];
-                list += $"{i + 1}. {track.artist.name} - *{track.name}* [{track.playcount} scrobbles]\n";
-            }
-
-            return list;
-        }
-
-        //determines the time span used for the chart
-        private LastStatsTimeSpan DetermineSpan(string span)
-        {
-            LastStatsTimeSpan timeSpan = LastStatsTimeSpan.Overall;
-            switch (span.ToLower())
-            {
-                case "week":
-                    timeSpan = LastStatsTimeSpan.Week;
-                    break;
-                case "month":
-                    timeSpan = LastStatsTimeSpan.Month;
-                    break;
-                case "year":
-                    timeSpan = LastStatsTimeSpan.Year;
-                    break;
-            }
-
-            return timeSpan;
-        }
-
-        //builds the embed for the chart
-        private async Task BuildTopAsync(string list, string username, string chartType, LastStatsTimeSpan span)
-        {
-            var response = new EmbedBuilder()
-                .WithTitle($"Top {chartType} for {username} - {span}")
-                .WithDescription(list)
-                .WithColor(Color.Gold)
-                .Build();
-            await ReplyAsync("", false, response);
-        }
-
-        //Checks if the last.fm user exists
-        private async Task<bool> CheckIfUserExistsAsync(string username)
-        {
-            var response = await _client.User.GetInfoAsync(username);
-            if (response.Success)
-            {
-                if (response.Content.Id != "")
+                if (await CheckIfUserExistsAsync(username))
                 {
-                    if (response.Content.Playcount > 0)
-                        return true;
-
-                    await Response.Error(Context, "The user hasn't scrobbled any tracks.");
-                    return false;
+                    await SendYtLink(username);
                 }
             }
-            await Response.Error(Context, LastFmError.NotFound);
-            return false;
-        }
-
-        //TODO: last.fm user profile picture
-        //show user's scrobbles
-        private async Task NowPlayingAsync(string username)
-        {
-            try
+            else
             {
-                var response = await _client.User.GetRecentScrobbles(username, null, 1, 2);
-                var tracks = response.Content;
-
-                string currAlbum = tracks[0].AlbumName ?? "";
-                string prevAlbum = tracks[1].AlbumName ?? "";
-                string albumArt = (tracks[0].Images.Large != null) ? tracks[0].Images.Largest.ToString() : "";
-
-                var msg = new EmbedBuilder();
-                var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
-                var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
-                if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
-                if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
-                msg.WithTitle($"Recent tracks for {username}")
-                    .WithThumbnailUrl(albumArt)
-                    .WithUrl($"https://www.last.fm/user/{username}")
-                    .AddField("**Current:**", currField)
-                    .AddField("**Previous:**", prevField)
-                    .WithColor(Color.DarkBlue);
-
-                await ReplyAsync("", false, msg.Build());
-            }
-            catch (Exception ex)
-            {
-                await Response.Error(Context, ex.Message);
+                var user = await DbFindUserAsync();
+                if (user != null)
+                {
+                    await SendYtLink(user.LastFm);
+                    return;
+                }
+                await Response.Error(Context, LastFmError.NotLinked);
             }
         }
-
-        //find a user in the database
-        private async Task<User> DbFindUserAsync()
-        {
-            var user = await _dbContext.Users.SingleOrDefaultAsync(
-                u => u.DiscordId == Context.User.Id.ToString());
-
-            return user;
-        }
-    }
-
-    static class LastFmError
-    {
-        public static string NotFound => "User not found.";
-        public static string NotLinked => "You haven't linked your last.fm profile.";
-        public static string InvalidSpan => "Invalid time span provided.";
-        public static string Limit => "Check the given limit and try again.";
     }
 }

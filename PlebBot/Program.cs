@@ -56,7 +56,7 @@ namespace PlebBot
             _client.Log += Log;
             _client.JoinedGuild += HandleJoinGuildAsync;
             _client.LeftGuild += HandleLeaveGuildAsync;
-            _client.MessageDeleted += HandleMessageDeletedAsync;
+            //_client.MessageDeleted += HandleMessageDeletedAsync;
 
             _commands = new CommandService();
             await InstallCommandsAsync();

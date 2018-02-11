@@ -10,7 +10,7 @@ namespace PlebBot
 {
     public partial class Program
     {
-        private readonly MessageCache _botResponses = new MessageCache();
+        //private readonly MessageCache _botResponses = new MessageCache();
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
         {
@@ -34,15 +34,16 @@ namespace PlebBot
             }
         }
 
-        private async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> message, ISocketMessageChannel channel)
-        {
-            var msg = _botResponses.Remove(message.Id);
-            try
-            {
-                await msg.DeleteAsync();
-            }
-            catch (Exception) { }
-        }
+        //TODO: delete bot response if command message is deleted
+        //private async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> message, ISocketMessageChannel channel)
+        //{
+        //    var msg = _botResponses.Remove(message.Id);
+        //    try
+        //    {
+        //        await msg.DeleteAsync();
+        //    }
+        //    catch (Exception) { }
+        //}
 
         private async Task HandleJoinGuildAsync(SocketGuild guild)
         {
