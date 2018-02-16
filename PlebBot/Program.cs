@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+//using NAudio.MediaFoundation;
 using PlebBot.Modules;
 using PlebBot.Data;
+using PlebBot.Helpers;
 
 namespace PlebBot
 {
@@ -46,6 +48,8 @@ namespace PlebBot
                 .AddSingleton(_config)
                 .AddEntityFrameworkNpgsql()
                 .AddDbContext<BotContext>(options => options.UseNpgsql(_config["connection_string"]))
+                .AddSingleton<AudioService>()
+                .AddSingleton<YtService>()
                 .BuildServiceProvider();
 
             _context = _services.GetService<BotContext>();
@@ -82,6 +86,7 @@ namespace PlebBot
             await _commands.AddModuleAsync<Roles>();
             await _commands.AddModuleAsync<Admin>();
             await _commands.AddModuleAsync<Help>();
+            await _commands.AddModuleAsync<MusicPlayer>();
         }
     }
 }

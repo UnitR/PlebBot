@@ -26,11 +26,12 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
 
+            await context.Channel.TriggerTypingAsync();
             var result = await _commands.ExecuteAsync(context, argPos, _services);
 
             if (!result.IsSuccess && result.Error != CommandError.UnknownCommand && result.Error != CommandError.BadArgCount)
             {
-                await context.Channel.SendMessageAsync(result.ErrorReason);
+                await Response.Error(context, result.ErrorReason);
             }
         }
 

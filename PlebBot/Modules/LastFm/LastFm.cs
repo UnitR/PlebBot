@@ -124,7 +124,7 @@ namespace PlebBot.Modules
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
                     {
-                        var timeSpan = DetermineSpan(span);
+                        var timeSpan = await DetermineSpan(span);
                         await GetTopArtistsAsync(username, timeSpan, lim);
                         return;
                     }
@@ -138,7 +138,7 @@ namespace PlebBot.Modules
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
                     {
-                        var timeSpan = DetermineSpan(span);
+                        var timeSpan = await DetermineSpan(span);
                         await GetTopArtistsAsync(user.LastFm, timeSpan, lim);
                         return;
                     }
@@ -162,7 +162,7 @@ namespace PlebBot.Modules
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
                     {
-                        var timeSpan = DetermineSpan(span);
+                        var timeSpan = await DetermineSpan(span);
                         await GetTopAlbumsAsync(username, timeSpan, lim);
                         return;
                     }
@@ -176,7 +176,7 @@ namespace PlebBot.Modules
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
                     {
-                        var timeSpan = DetermineSpan(span);
+                        var timeSpan = await DetermineSpan(span);
                         await GetTopAlbumsAsync(user.LastFm, timeSpan, lim);
                         return;
                     }
@@ -200,7 +200,7 @@ namespace PlebBot.Modules
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
                     {
-                        await SendTopTracks(span, username, lim);
+                        await TopTracksAsync(span, username, lim);
                         return;
                     }
                     await Response.Error(Context, LastFmError.Limit);
@@ -213,7 +213,7 @@ namespace PlebBot.Modules
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
                     {
-                        await SendTopTracks(span, user.LastFm, lim);
+                        await TopTracksAsync(span, user.LastFm, lim);
                         return;
                     }
                     await Response.Error(Context, LastFmError.Limit);
@@ -224,14 +224,14 @@ namespace PlebBot.Modules
         }
 
         [Command("fmyt")]
-        [Summary("Send a YouTube link to your current scrobble")]
+        [Summary("Send a YtService link to your current scrobble")]
         public async Task YtLink([Summary("Your last.fm username")] string username = "")
         {
             if (username != String.Empty)
             {
                 if (await CheckIfUserExistsAsync(username))
                 {
-                    await SendYtLink(username);
+                    await SendYtLinkAsync(username);
                 }
             }
             else
@@ -239,7 +239,7 @@ namespace PlebBot.Modules
                 var user = await DbFindUserAsync();
                 if (user != null)
                 {
-                    await SendYtLink(user.LastFm);
+                    await SendYtLinkAsync(user.LastFm);
                     return;
                 }
                 await Response.Error(Context, LastFmError.NotLinked);

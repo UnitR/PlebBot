@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -45,6 +44,14 @@ namespace PlebBot.Modules
             } else {
                 await Response.Error(Context, "You must provide a comma-separated list of options.");
             }
+        }
+
+        [Command("yt")]
+        [Summary("Link a YtService video")]
+        public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
+        {
+            var yt = new YtService();
+            await yt.LinkVideoAsync(Context, query);
         }
 
         //choose a random element from a list and send the result

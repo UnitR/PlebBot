@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using Discord;
 using Discord.Commands;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using PlebBot.Data;
 using PlebBot.Helpers;
 
@@ -13,12 +11,10 @@ namespace PlebBot.Modules
     public class Help : ModuleBase<SocketCommandContext>
     {
         private readonly CommandService _service;
-        private readonly BotContext _dbContext;
 
-        public Help(CommandService service, BotContext dbContext)
+        public Help(CommandService service)
         {
             _service = service;
-            this._dbContext = dbContext;
         }
 
         [Command("help")]

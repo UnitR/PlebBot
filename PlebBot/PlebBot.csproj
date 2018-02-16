@@ -12,9 +12,19 @@
     <PackageReference Include="Discord.Net" Version="1.0.2" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.0.1.307" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
+    <PackageReference Include="YoutubeExplode" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="opus.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="libsodium.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -29,6 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Temp\" />
     <Folder Include="TypeReaders\" />
   </ItemGroup>
 
