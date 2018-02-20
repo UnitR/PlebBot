@@ -48,7 +48,7 @@ namespace PlebBot
                 .AddSingleton(_config)
                 .AddEntityFrameworkNpgsql()
                 .AddDbContext<BotContext>(options => options.UseNpgsql(_config["connection_string"]))
-                .AddSingleton<AudioService>()
+                //.AddSingleton<AudioService>()
                 .AddSingleton<YtService>()
                 .BuildServiceProvider();
 
@@ -86,7 +86,7 @@ namespace PlebBot
             await _commands.AddModuleAsync<Roles>();
             await _commands.AddModuleAsync<Admin>();
             await _commands.AddModuleAsync<Help>();
-            await _commands.AddModuleAsync<MusicPlayer>();
+            //await _commands.AddModuleAsync<MusicPlayer>();
         }
     }
 }
