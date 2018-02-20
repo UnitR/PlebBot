@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using AngleSharp.Extensions;
 using Discord;
 using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -35,7 +31,8 @@ namespace PlebBot.Modules
 
                 foreach (var album in albums)
                 {
-                    list += $"{i}. {album.ArtistName} - *{album.Name}* [{album.PlayCount} scrobbles]\n";
+                    list += $"{i}. {album.ArtistName} - *{album.Name}* " +
+                            $"[{String.Format("{0:n0}", album.PlayCount)} scrobbles]\n";
                     i++;
                 }
 
@@ -52,7 +49,7 @@ namespace PlebBot.Modules
             var i = 1;
             foreach (var artist in artists)
             {
-                list += $"{i}. {artist.Name} [{artist.PlayCount} scrobbles]\n";
+                list += $"{i}. {artist.Name} [{String.Format("{0:n0}", artist.PlayCount)} scrobbles]\n";
                 i++;
             }
 
@@ -100,9 +97,9 @@ namespace PlebBot.Modules
             for (int i = 0; i < limit; i++)
             {
                 dynamic track = response.toptracks.track[i];
-                list += $"{i + 1}. {track.artist.name} - *{track.name}* [{track.playcount} scrobbles]\n";
+                list += $"{i + 1}. {track.artist.name} - *{track.name}* " +
+                        $"[{String.Format("{0:n0}", track.playcount)} scrobbles]\n";
             }
-
             return list;
         }
 
@@ -208,7 +205,6 @@ namespace PlebBot.Modules
         private async Task<string> TotalScrobblesAsync(LastStatsTimeSpan span, string username)
         {
             var scrobbles = 0;
-            var url = "";
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             long offset = 0;
             switch (span.ToString().ToLower())
@@ -236,7 +232,7 @@ namespace PlebBot.Modules
 
             if (offset != 0)
             {
-                url = $"http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
+                var url = $"http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
                       $"{username}&from={offset}to={now}&api_key={_lastFmKey}&format=json";
                 var page = 1;
                 dynamic response;
@@ -251,12 +247,9 @@ namespace PlebBot.Modules
                     scrobbles += response.recenttracks.track.Count;
                     scrobbles--;
                     page++;
-                    Console.WriteLine(response.recenttracks["@attr"].totalPages);
                 } while (page <= int.Parse(response.recenttracks["@attr"].totalPages.ToString()));
             }
-
-            Console.WriteLine(scrobbles);
-            return $"[{scrobbles} scrobbles total]";
+            return $"[{String.Format("{0:n0}", scrobbles)} scrobbles total]";
         }
     }
 }
