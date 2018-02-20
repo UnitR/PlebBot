@@ -233,21 +233,17 @@ namespace PlebBot.Modules
             if (offset != 0)
             {
                 var url = $"http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
-                      $"{username}&from={offset}to={now}&api_key={_lastFmKey}&format=json";
-                var page = 1;
-                dynamic response;
-                do
+                          $"{username}&from={offset}to={now}&api_key={_lastFmKey}" +
+                          $"&page=1&limit=200&format=json";
+
+                string json;
+                using (WebClient wc = new WebClient())
                 {
-                    string json;
-                    using (WebClient wc = new WebClient())
-                    {
-                        json = await wc.DownloadStringTaskAsync($"{url}&page={page}&limit=200");
-                    }
-                    response = (JObject)JsonConvert.DeserializeObject(json);
-                    scrobbles += response.recenttracks.track.Count;
-                    scrobbles--;
-                    page++;
-                } while (page <= int.Parse(response.recenttracks["@attr"].totalPages.ToString()));
+                    json = await wc.DownloadStringTaskAsync(url);
+                }
+                dynamic response = (JObject) JsonConvert.DeserializeObject(json);
+
+                scrobbles = response.recenttracks["@attr"].total;
             }
             return $"[{String.Format("{0:n0}", scrobbles)} scrobbles total]";
         }
