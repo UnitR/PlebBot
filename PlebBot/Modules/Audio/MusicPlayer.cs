@@ -42,7 +42,7 @@ namespace PlebBot.Modules
             try
             {
                 var path = await _ytService.DownloadVideoAsync(name);
-                var audio = $"{path}.mp3";
+                var audio = $"{path}.mkv";
 
                 //await EnqueueAsync(name);
 
@@ -54,11 +54,10 @@ namespace PlebBot.Modules
                     async () =>
                     {
                         await _audioService.ConvertToAudioAsync(path);
-                    },
-                    async () =>
-                    {
-                        await _audioService.StreamAudioAsync(Context.Guild, audio);
                     });
+
+                await _audioService.StreamAudioAsync(Context.Guild, audio);
+
 
                 //await DequeueAsync();
             }

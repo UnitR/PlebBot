@@ -45,8 +45,9 @@ namespace PlebBot.Modules
         public Task<string> ConvertToAudioAsync(string path)
         {
             Process process;
-            var audio = $"{path}.mp3";
-            var args = $"-i \"{path}\" -q:a 0 -vn -ab 320k -ar 48000 -y \"{audio}\"";
+            var audio = $"{path}.aac";
+            //var args = $"-i \"{path}\" -q:a 0 -vn -ab 320k -ar 48000 -y \"{audio}\"";
+            var args = $"-y -i {path} -vn -ar 44100 -ac 2 -b:a 320 -f aac {audio}";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 process = Process.Start(new ProcessStartInfo()

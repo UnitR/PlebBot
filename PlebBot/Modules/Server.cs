@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -41,7 +42,7 @@ namespace PlebBot.Modules
     }
 
     [Group("Roles")]
-    [Alias("role")]
+    [Alias("role", "roles")]
     [Summary("Manage server roles")]
     public class Roles : ModuleBase<SocketCommandContext>
     {
@@ -80,40 +81,45 @@ namespace PlebBot.Modules
         }
 
         [Command]
+        [Alias("get")]
         [Summary("Get a self-assignable role")]
-        public async Task GetRole([Summary("The name of the role you wish to obtain")]string role)
+        public async Task GetRole([Summary("The name of the role you wish to obtain")] string role)
         {
-            var serverId = _dbContext.Servers.SingleOrDefaultAsync(
-                s => s.DiscordId == Context.Guild.Id.ToString()).Result.Id;
-            var roles = await _dbContext.Roles.Where(r => r.Server.Id == serverId).ToListAsync();
+            var server = 
+                await _dbContext.Servers.SingleOrDefaultAsync(s => s.DiscordId == Context.Guild.Id.ToString());
+            var roles = await _dbContext.Roles.Where(r => r.Server.Id == server.Id).ToListAsync();
             if (roles.Any())
             {
-                var roleResult = roles.Find(
-                    r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
+                var roleResult = 
+                    roles.Find(r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
                 if (roleResult != null)
                 {
-                    var userRoles = (Context.User as IGuildUser).RoleIds;
-                    if (!userRoles.Contains(ulong.Parse(roleResult.DiscordId)))
+                    var userRoles = (Context.User as IGuildUser)?.RoleIds;
+                    var contains = userRoles?.Contains(ulong.Parse(roleResult.DiscordId));
+                    if (contains.GetValueOrDefault())
                     {
-                        var assign = Context.Guild.Roles.SingleOrDefault(
-                            r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
-                        var colours = roles.Where(r => r.IsColour).ToList();
-                        foreach (var colour in colours)
+                        var assign = 
+                            Context.Guild.Roles.SingleOrDefault(
+                                r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
+                        if (roleResult.IsColour)
                         {
-                            if (userRoles.Contains(ulong.Parse(colour.DiscordId)))
+                            var colours = roles.Where(r => r.IsColour).ToList();
+                            foreach (var colour in colours)
                             {
+                                contains = userRoles?.Contains(ulong.Parse(colour.DiscordId));
+                                if (!contains.GetValueOrDefault()) continue;
                                 var unassign =
                                     Context.Guild.Roles.SingleOrDefault(
                                         r => String.Equals(
                                             r.Id.ToString(), colour.DiscordId,
                                             StringComparison.CurrentCultureIgnoreCase));
 
-                                await (Context.User as IGuildUser).RemoveRoleAsync(unassign);
+                                await ((IGuildUser) Context.User).RemoveRoleAsync(unassign);
                             }
                         }
 
-                        await (Context.User as IGuildUser).AddRoleAsync(assign);
-                        await Response.Success(Context, $"Good job! You managed to get the '{assign.Name}' role!");
+                        await ((IGuildUser) Context.User).AddRoleAsync(assign);
+                        await Response.Success(Context, $"Good job! You managed to get the '{assign?.Name}' role!");
                     }
                     else
                     {
@@ -130,6 +136,31 @@ namespace PlebBot.Modules
                 await Response.Error(Context, "There are no self-assignable roles for the server.");
             }
         }
+
+        [Command("remove")]
+        [Summary("Removes a role from you")]
+        public async Task RemoveRole([Summary("The name of the role you want to remove")] string role)
+        {
+            var roleResult = await _dbContext.Roles.SingleOrDefaultAsync(r => r.Name.ToLower() == role);
+            var user = Context.User as IGuildUser;
+            Debug.Assert(user != null, "user != null");
+
+            var query = from r in user.RoleIds.AsParallel()
+                        where r == ulong.Parse(roleResult.DiscordId)
+                        select r;
+            if (query.Count() != 0)
+            {
+                query.ForAll(async r =>
+                {
+                    var guildRole = Context.Guild.Roles.FirstOrDefault(x => x.Id == r);
+                    await user.RemoveRoleAsync(guildRole);
+                    await Response.Success(Context, $"Removed '{roleResult.Name}' from your roles.");
+                });
+                return;
+            }
+            await Response.Error(Context, $"You don't have '{roleResult.Name}' assigned to you.");
+        }
+
 
         [Command("self")]
         [Summary("Make a role self-assignable")]
