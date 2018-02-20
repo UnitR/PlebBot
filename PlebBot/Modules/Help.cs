@@ -17,7 +17,7 @@ namespace PlebBot.Modules
             _service = service;
         }
 
-        [Command("help")]
+        [Command("help", RunMode = RunMode.Async)]
         public async Task HelpAsync()
         {
             var builder = new EmbedBuilder()
@@ -70,7 +70,7 @@ namespace PlebBot.Modules
             await ReplyAsync("", false, builder.Build());
         }
 
-        [Command("help")]
+        [Command("help", RunMode = RunMode.Async)]
         public async Task HelpAsync(params string[] command)
         {
             string cmd = "";

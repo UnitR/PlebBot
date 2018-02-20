@@ -11,14 +11,14 @@ namespace PlebBot.Modules
 {
     class Miscellaneous : ModuleBase<SocketCommandContext>
     {
-        [Command("ping")]
+        [Command("ping", RunMode = RunMode.Async)]
         [Summary("Ping!... Pong!")]
         public async Task PingPong()
         {
             await ReplyAsync("...Pong!");
         }
 
-        [Command("bless")]
+        [Command("bless", RunMode = RunMode.Async)]
         [Summary("Blessed be the rains down in Africa")]
         public async Task Bless([Summary("User to bless the rains with")] SocketUser user = null)
         {
@@ -32,7 +32,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("choose")]
+        [Command("choose", RunMode = RunMode.Async)]
         [Summary("Makes a decision for you")]
         public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choice_list)
         {
@@ -46,7 +46,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("yt")]
+        [Command("yt", RunMode = RunMode.Async)]
         [Summary("Link a YtService video")]
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {

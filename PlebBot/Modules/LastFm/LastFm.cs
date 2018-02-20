@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Linq;
 using Discord.Commands;
 using System.Threading.Tasks;
-using Discord;
 using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
-using Newtonsoft.Json;
-using System.Net;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 
@@ -37,7 +32,7 @@ namespace PlebBot.Modules
             this._dbContext = dbContext;
         }
 
-        [Command("fm")]
+        [Command("fm", RunMode = RunMode.Async)]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
         {
@@ -62,7 +57,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm set")]
+        [Command("fm set", RunMode = RunMode.Async)]
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
         {
@@ -111,7 +106,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm top artists")]
+        [Command("fm top artists", RunMode = RunMode.Async)]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -149,7 +144,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm top albums")]
+        [Command("fm top albums", RunMode = RunMode.Async)]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -187,7 +182,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm top tracks")]
+        [Command("fm top tracks", RunMode = RunMode.Async)]
         [Summary("Get the top tracks for a user")]
         public async Task TopTracks(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -223,7 +218,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fmyt")]
+        [Command("fmyt", RunMode = RunMode.Async)]
         [Summary("Send a YtService link to your current scrobble")]
         public async Task YtLink([Summary("Your last.fm username")] string username = "")
         {
