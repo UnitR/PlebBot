@@ -34,7 +34,6 @@ namespace PlebBot.Helpers
             {
                 var videoId = result.Items.FirstOrDefault()?.Id.VideoId;
                 var video = await GetVideoAsync(videoId);
-                var videoDate = video.Snippet.PublishedAt?.ToString("MMMM dd, yyyy");
                 var videoMinutes = XmlConvert.ToTimeSpan(video.ContentDetails.Duration).ToString(@"mm");
                 if (videoMinutes[0] == '0') videoMinutes = videoMinutes.Remove(0, 1);
                 var videoSeconds = XmlConvert.ToTimeSpan(video.ContentDetails.Duration).ToString(@"ss");
@@ -48,9 +47,7 @@ namespace PlebBot.Helpers
                 if (video.Statistics.DislikeCount != null)
                     response += $" | {String.Format("{0:n0}", video.Statistics.DislikeCount)} dislikes";
 
-                response += $" | Uploaded on {videoDate} by {video.Snippet.ChannelTitle}\n" +
-                            $"https://youtu.be/{videoId}";
-
+                response += $"\nhttps://youtu.be/{videoId}";
                 await context.Channel.SendMessageAsync(response);
                 return;
             }
