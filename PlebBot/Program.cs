@@ -86,7 +86,7 @@ namespace PlebBot
             await _commands.AddModuleAsync<Roles>();
             await _commands.AddModuleAsync<Admin>();
             await _commands.AddModuleAsync<Help>();
-            await _commands.AddModuleAsync<MusicPlayer>();
+            //await _commands.AddModuleAsync<MusicPlayer>();
         }
     }
 }
