@@ -171,7 +171,7 @@ namespace PlebBot.Modules
 
                 string currAlbum = tracks[0].AlbumName ?? "";
                 string prevAlbum = tracks[1].AlbumName ?? "";
-                string albumArt = (tracks[0].Images.Largest != null) ? tracks[0].Images.Largest.ToString() : "";
+                string albumArt = (tracks[0].Images.Large != null) ? tracks[0].Images.Large.ToString() : "";
 
                 var msg = new EmbedBuilder();
                 var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
