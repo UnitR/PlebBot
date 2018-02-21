@@ -1,4 +1,4 @@
-﻿namespace PlebBot.Data.Models
+﻿namespace Dapper.Test.Models
 {
     public class Role
     {

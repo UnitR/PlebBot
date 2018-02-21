@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.Commands;
-using Microsoft.EntityFrameworkCore;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
@@ -18,26 +19,26 @@ namespace PlebBot.Modules
     [ManageServer]
     public class Admin : ModuleBase<SocketCommandContext>
     {
-        private readonly BotContext _dbContext;
-
-        public Admin(BotContext dbContext)
-        {
-            this._dbContext = dbContext;
-        }
-
         [Command("prefix")]
         [Summary("Change the command prefix")]
         [ManageServer]
         public async Task ChangePrefix([Summary("The prefix you want to use")] string prefix)
         {
-            var serv = await _dbContext.Servers.SingleOrDefaultAsync(
-                s => s.DiscordId == Context.Guild.Id.ToString());
-            if (serv != null)
+            var serverId = Context.Guild.Id.ToString();
+            using (var conn = BotContext.OpenConnection())
             {
-                serv.Prefix = prefix;
-                _dbContext.Update(serv);
-                await _dbContext.SaveChangesAsync();
-                await Response.Success(Context, "Successfully updated the prefix for the server.");
+                var id =
+                    await conn.QuerySingleOrDefaultAsync<int>(
+                        "select \"Id\" from public.\"Servers\" where \"DiscordId\" = @discordId",
+                        new {discordId = serverId});
+
+                if (id != 0)
+                {
+                    await conn.ExecuteAsync("update public.\"Servers\" set \"Prefix\" = @prefix where \"Id\" = @id",
+                                            new {prefix = prefix, id = id});
+
+                    await Response.Success(Context, "Successfully updated the prefix for the server.");
+                }
             }
         }
     }
@@ -47,18 +48,12 @@ namespace PlebBot.Modules
     [Summary("Manage server roles")]
     public class Roles : ModuleBase<SocketCommandContext>
     {
-        private readonly BotContext _dbContext;
-
-        public Roles(BotContext context)
-        {
-            this._dbContext = context;
-        }
-
+        //TODO: use private method
         [Command]
         [Summary("Get a list of the self-assignable roles")]
         public async Task GetAssignable()
         {
-            var roles = await _dbContext.Roles.ToListAsync();
+            var roles = await GetServerRolesAsync();
             if (roles.Any())
             {
                 var response = new EmbedBuilder()
@@ -86,9 +81,7 @@ namespace PlebBot.Modules
         [Summary("Get a self-assignable role")]
         public async Task GetRole([Summary("The name of the role you wish to obtain")] string role)
         {
-            var server = 
-                await _dbContext.Servers.SingleOrDefaultAsync(s => s.DiscordId == Context.Guild.Id.ToString());
-            var roles = await _dbContext.Roles.Where(r => r.Server.Id == server.Id).ToListAsync();
+            var roles = await GetServerRolesAsync();
             if (roles.Any())
             {
                 var roleResult = 
@@ -142,13 +135,27 @@ namespace PlebBot.Modules
         [Summary("Removes a role from you")]
         public async Task RemoveRole([Summary("The name of the role you want to remove")] string role)
         {
-            var roleResult = await _dbContext.Roles.SingleOrDefaultAsync(r => r.Name.ToLower() == role);
+            Role roleResult;
+            using (var conn = BotContext.OpenConnection())
+            {
+                roleResult = 
+                    await conn.QuerySingleOrDefaultAsync<Role>(
+                        "select * from public.\"Roles\" where lower(\"Name\") = @name", new {name = role.ToLower()});
+            }
+
+            if (roleResult == null)
+            {
+                await Response.Error(Context, $"No role with the name {role} was found.");
+                return;
+            }
+
             var user = Context.User as IGuildUser;
             Debug.Assert(user != null, "user != null");
 
             var query = from r in user.RoleIds.AsParallel()
                         where r == ulong.Parse(roleResult.DiscordId)
                         select r;
+
             if (query.Count() != 0)
             {
                 query.ForAll(async r =>
@@ -171,40 +178,49 @@ namespace PlebBot.Modules
             [Summary("Marks the role as a colour role. Enables automatic colour removal and assigning of colours for users. Example: roles self Blue -c")] string colour = "")
         {
             var serverRoles = Context.Guild.Roles.ToList();
-            var roleFind = serverRoles.Find(
-                r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
-            if (roleFind != null)
+            var roleFind = 
+                serverRoles.Find(r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
+
+            using (var conn = BotContext.OpenConnection())
             {
-                if (_dbContext.Roles.SingleOrDefault(
-                        r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase)) == null)
+                if (roleFind != null)
                 {
-                    bool isColour = false;
-                    var server =
-                        await _dbContext.Servers.SingleOrDefaultAsync(
-                            s => s.DiscordId == Context.Guild.Id.ToString());
-
-                    if (colour == "-c")
-                        isColour = true;
-
-                    await _dbContext.Roles.AddAsync(new Role()
+                    var query =
+                        await conn.QuerySingleOrDefaultAsync<Role>(
+                            "select * from public.\"Roles\" where \"Name\" = @name", new {name = role.ToLower()});
+                    if (query == null)
                     {
-                        Server = server,
-                        DiscordId = roleFind.Id.ToString(),
-                        Name = roleFind.Name,
-                        IsColour = isColour
-                    });
-                    await _dbContext.SaveChangesAsync();
+                        var isColour = false;
+                        var serverId =
+                            await conn.QuerySingleOrDefaultAsync<int>(
+                                "select \"Id\" from public.\"Servers\" where \"DiscordId\" = @discordId",
+                                new {discordId = Context.Guild.Id.ToString()});
+                        if (colour == "-c")
+                            isColour = true;
 
-                    await Response.Success(Context, $"Added '{roleFind.Name}' to the list of self-assignable roles.");
+                        await conn.ExecuteAsync(
+                            "insert into public.\"Roles\" (\"ServerId\", \"DiscordId\", \"Name\", \"IsColour\") " +
+                            "values (@server, @discordId, @name, @colour",
+                            new
+                            {
+                                server = serverId,
+                                discordId = roleFind.Id.ToString(),
+                                name = roleFind.Name,
+                                colour = isColour
+                            });
+
+                        await Response.Success(Context,
+                            $"Added '{roleFind.Name}' to the list of self-assignable roles.");
+                    }
+                    else
+                    {
+                        await Response.Error(Context, $"The '{roleFind.Name}' role is already set as self-assignable.");
+                    }
                 }
                 else
                 {
-                    await Response.Error(Context, $"The '{roleFind.Name}' role is already set as self-assignable.");
+                    await Response.Error(Context, $"No role with the name '{role}' was found in the server.");
                 }
-            }
-            else
-            {
-                await Response.Error(Context, $"No role with the name '{role}' was found in the server.");
             }
         }
 
@@ -213,21 +229,43 @@ namespace PlebBot.Modules
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task RemoveAssignable([Summary("The role whose name you wish to remove")] string role)
         {
-            var remove = await _dbContext.Roles.FirstOrDefaultAsync(
-                r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
-            if (remove != null)
+            using (var conn = BotContext.OpenConnection())
             {
-                _dbContext.Roles.RemoveRange(remove);
-                await _dbContext.SaveChangesAsync();
+                var remove = await conn.QuerySingleOrDefaultAsync<Role>(
+                        "select * from public.\"Roles\" where \"Name\" = @name", new { name = role.ToLower() });
 
-                await Response.Success(Context, $"The '{remove.Name}' role has been successfully " +
-                                                $"removed from the self-assignable list.");
+                if (remove != null)
+                {
+                    await conn.ExecuteAsync("delete from \"Roles\" where \"Id\" = @id", new {id = remove.Id});
+
+                    await Response.Success(Context, $"The '{remove.Name}' role has been successfully " +
+                                                    $"removed from the self-assignable list.");
+                }
+                else
+                {
+                    await Response.Error(Context,
+                        $"No role with the name '{role}' has been found in the self-assignable list");
+                }
             }
-            else
+        }
+
+        private async Task<List<Role>> GetServerRolesAsync()
+        {
+            List<Role> roles;
+            using (var conn = BotContext.OpenConnection())
             {
-                await Response.Error(Context,
-                    $"No role with the name '{role}' has been found in the self-assignable list");
+                var serverId =
+                    await conn.QueryFirstAsync<int>(
+                        "select \"Id\" from public.\"Servers\" where \"DiscordId\" = @discordId",
+                        new {discordId = Context.Guild.Id.ToString()});
+
+                var sql = "select * from public.\"Roles\" " +
+                          "where \"ServerId\" = @id";
+                var query = await conn.QueryAsync<Role>(sql, new {id = serverId});
+                roles = query.ToList();
             }
+
+            return roles;
         }
     }
 }

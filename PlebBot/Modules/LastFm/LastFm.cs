@@ -1,35 +1,24 @@
 ﻿using System;
-using Discord.Commands;
 using System.Threading.Tasks;
+using Dapper;
+using Discord.Commands;
 using IF.Lastfm.Core.Api;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
-using PlebBot.Data.Models;
 using PlebBot.Helpers;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 
 namespace PlebBot.Modules
 {
     public partial class LastFm : ModuleBase<SocketCommandContext>
     {
         private readonly LastfmClient _client;
-        private readonly BotContext _dbContext;
         private readonly string _lastFmKey;
-        private readonly YouTubeService _ytClient;
 
-        public LastFm(BotContext dbContext)
+        public LastFm()
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
             this._lastFmKey = config["tokens:lastfm_key"];
-            this._ytClient = new YouTubeService(new BaseClientService.Initializer()
-            {
-                ApiKey = config["tokens:yt_key"],
-                ApplicationName = this.GetType().ToString()
-            });
-            this._dbContext = dbContext;
         }
 
         [Command("fm")]
@@ -67,29 +56,32 @@ namespace PlebBot.Modules
                 {
                     try
                     {
-                        var user = await _dbContext.Users.SingleOrDefaultAsync(
-                            u => u.DiscordId == Context.User.Id.ToString());
-                        if (user != null)
+                        using (var conn = BotContext.OpenConnection())
                         {
-                            user.LastFm = username;
-                            _dbContext.Update(user);
-                            await _dbContext.SaveChangesAsync();
+                            var userId = 
+                                await conn.QueryFirstOrDefaultAsync<int>(
+                                "select \"Id\" from public.\"Users\" where \"DiscordId\" = @DiscordId",
+                                new {DiscordId = Context.User.Id.ToString()});
 
-                            await Response.Success(Context, "Succesfully updated your last.fm username.");
-                        }
-                        else
-                        {
-                            user = new User()
+                            if (userId != 0)
                             {
-                                DiscordId = Context.User.Id.ToString(),
-                                LastFm = username
-                            };
+                                await conn.ExecuteAsync(
+                                    "update public.\"Users\" set \"LastFm\" = @lastFm where \"Id\" = @id",
+                                    new {lastFm = username, id = userId});
 
-                            _dbContext.Add(user);
-                            await _dbContext.SaveChangesAsync();
+                                await Response.Success(Context, "Succesfully updated your last.fm username.");
+                            }
+                            else
+                            {
+                                var discord = Context.User.Id.ToString();
+                                await conn.ExecuteAsync(
+                                    "insert into public.\"Users\" (\"DiscordId\", \"LastFm\") " +
+                                    "values (@discordId, @lastFm)",
+                                    new {discordId = discord, lastFm = username});
 
-                            await Response.Success(
-                                Context, "last.fm username saved. You can now freely use the `fm` commands.");
+                                await Response.Success(
+                                    Context, "last.fm username saved. You can now freely use the `fm` commands.");
+                            }
                         }
                     }
                     catch (Exception ex)

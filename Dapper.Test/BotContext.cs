@@ -4,11 +4,11 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
-namespace PlebBot.Data
+namespace Dapper.Test
 {
     public class BotContext
     {
-        public static Func<DbConnection> OpenConnection = () => new NpgsqlConnection(Connection());
+        public static Func<DbConnection> ConnectionFactory = () => new NpgsqlConnection(Connection());
 
         private static string Connection()
         {
@@ -16,7 +16,7 @@ namespace PlebBot.Data
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("_config.json")
                 .Build();
-            var connString = config["connection_string"];
+            var connString = config["connection_strin"];
 
             return connString;
         }

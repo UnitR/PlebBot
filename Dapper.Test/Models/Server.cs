@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace PlebBot.Data.Models
+namespace Dapper.Test.Models
 {
     public class Server
     {
