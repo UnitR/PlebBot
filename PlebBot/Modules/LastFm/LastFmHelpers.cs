@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Discord;
@@ -149,11 +150,8 @@ namespace PlebBot.Modules
             {
                 if (response.Content.Id != "")
                 {
-                    if (response.Content.Playcount > 0)
+                    if (response.Content.Playcount >= 0)
                         return true;
-
-                    await Response.Error(Context, "The user hasn't scrobbled any tracks.");
-                    return false;
                 }
             }
             await Response.Error(Context, LastFmError.NotFound);
@@ -167,25 +165,30 @@ namespace PlebBot.Modules
             try
             {
                 var response = await _client.User.GetRecentScrobbles(username, null, 1, 2);
-                var tracks = response.Content;
+                if (response.Any())
+                {
+                    var tracks = response.Content;
 
-                string currAlbum = tracks[0].AlbumName ?? "";
-                string prevAlbum = tracks[1].AlbumName ?? "";
-                string albumArt = (tracks[0].Images.Largest != null) ? tracks[0].Images.Largest.ToString() : "";
+                    string currAlbum = tracks[0].AlbumName ?? "";
+                    string prevAlbum = tracks[1].AlbumName ?? "";
+                    string albumArt = (tracks[0].Images.Largest != null) ? tracks[0].Images.Largest.ToString() : "";
 
-                var msg = new EmbedBuilder();
-                var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
-                var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
-                if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
-                if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
-                msg.WithTitle($"Recent tracks for {username}")
-                    .WithThumbnailUrl(albumArt)
-                    .WithUrl($"https://www.last.fm/user/{username}")
-                    .AddField("**Current:**", currField)
-                    .AddField("**Previous:**", prevField)
-                    .WithColor(Color.DarkBlue);
+                    var msg = new EmbedBuilder();
+                    var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
+                    var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
+                    if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
+                    if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
+                    msg.WithTitle($"Recent tracks for {username}")
+                        .WithThumbnailUrl(albumArt)
+                        .WithUrl($"https://www.last.fm/user/{username}")
+                        .AddField("**Current:**", currField)
+                        .AddField("**Previous:**", prevField)
+                        .WithColor(Color.DarkBlue);
 
-                await ReplyAsync("", false, msg.Build());
+                    await ReplyAsync("", false, msg.Build());
+                    return;
+                }
+                await Response.Error(Context, "You haven't scrobbled any tracks.");
             }
             catch (Exception ex)
             {
