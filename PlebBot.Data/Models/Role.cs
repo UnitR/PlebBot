@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PlebBot.Data.Models
+﻿namespace PlebBot.Data.Models
 {
     public class Role
     {

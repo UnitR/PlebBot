@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Linq;
-using Discord.Commands;
 using System.Threading.Tasks;
 using Dapper;
+using Discord.Commands;
 using IF.Lastfm.Core.Api;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
-using PlebBot.Data.Models;
 using PlebBot.Helpers;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 
 namespace PlebBot.Modules
 {

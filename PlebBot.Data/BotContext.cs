@@ -1,12 +1,8 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
 using System.IO;
-using System.Linq;
-using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using PlebBot.Data.Models;
 
 namespace PlebBot.Data
 {
