@@ -32,7 +32,7 @@ namespace PlebBot.Modules
             this._dbContext = dbContext;
         }
 
-        [Command("fm", RunMode = RunMode.Async)]
+        [Command("fm")]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
         {
@@ -57,7 +57,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm set", RunMode = RunMode.Async)]
+        [Command("fm set")]
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
         {
@@ -106,7 +106,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm top artists", RunMode = RunMode.Async)]
+        [Command("fm top artists")]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -144,7 +144,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm top albums", RunMode = RunMode.Async)]
+        [Command("fm top albums")]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -182,7 +182,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fm top tracks", RunMode = RunMode.Async)]
+        [Command("fm top tracks")]
         [Summary("Get the top tracks for a user")]
         public async Task TopTracks(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -218,7 +218,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("fmyt", RunMode = RunMode.Async)]
+        [Command("fmyt")]
         [Summary("Send a YtService link to your current scrobble")]
         public async Task YtLink([Summary("Your last.fm username")] string username = "")
         {

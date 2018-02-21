@@ -25,7 +25,7 @@ namespace PlebBot.Modules
             this._dbContext = dbContext;
         }
 
-        [Command("prefix", RunMode = RunMode.Async)]
+        [Command("prefix")]
         [Summary("Change the command prefix")]
         [ManageServer]
         public async Task ChangePrefix([Summary("The prefix you want to use")] string prefix)
@@ -54,7 +54,7 @@ namespace PlebBot.Modules
             this._dbContext = context;
         }
 
-        [Command(RunMode = RunMode.Async)]
+        [Command]
         [Summary("Get a list of the self-assignable roles")]
         public async Task GetAssignable()
         {
@@ -81,7 +81,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command(RunMode = RunMode.Async)]
+        [Command]
         [Alias("get")]
         [Summary("Get a self-assignable role")]
         public async Task GetRole([Summary("The name of the role you wish to obtain")] string role)
@@ -138,7 +138,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("remove", RunMode = RunMode.Async)]
+        [Command("remove")]
         [Summary("Removes a role from you")]
         public async Task RemoveRole([Summary("The name of the role you want to remove")] string role)
         {
@@ -163,7 +163,7 @@ namespace PlebBot.Modules
         }
 
 
-        [Command("self", RunMode = RunMode.Async)]
+        [Command("self")]
         [Summary("Make a role self-assignable")]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task SetAssignable(
@@ -208,7 +208,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("remove", RunMode = RunMode.Async)]
+        [Command("remove")]
         [Summary("Remove a role from the self-assignable list")]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task RemoveAssignable([Summary("The role whose name you wish to remove")] string role)
