@@ -2,12 +2,9 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using System;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.EntityFrameworkCore;
 //using NAudio.MediaFoundation;
 using PlebBot.Modules;
 using PlebBot.Data;

@@ -1,12 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Dapper;
-using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Microsoft.EntityFrameworkCore;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
