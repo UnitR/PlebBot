@@ -97,7 +97,7 @@ namespace PlebBot.Modules
                 {
                     var userRoles = (Context.User as IGuildUser)?.RoleIds;
                     var contains = userRoles?.Contains(ulong.Parse(roleResult.DiscordId));
-                    if (contains.GetValueOrDefault())
+                    if (!contains.GetValueOrDefault())
                     {
                         var assign = 
                             Context.Guild.Roles.SingleOrDefault(
