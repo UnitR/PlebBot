@@ -1,30 +1,28 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Common;
+using System.IO;
+using System.Linq;
+using Dapper;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
 using PlebBot.Data.Models;
 
 namespace PlebBot.Data
 {
-    public class BotContext : DbContext
+    public class BotContext
     {
-        public virtual DbSet<User> Users { get; set; }
-        public virtual DbSet<Server> Servers { get; set; }
-        public virtual DbSet<Role> Roles { get; set; }
+        public static Func<DbConnection> OpenConnection = () => new NpgsqlConnection(Connection());
 
-        public BotContext(DbContextOptions<BotContext> options) : base(options) { }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        private static string Connection()
         {
-            modelBuilder.Entity<Server>()
-                .Property(s => s.Prefix)
-                .HasDefaultValue("!");
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("_config.json")
+                .Build();
+            var connString = config["connection_string"];
 
-            modelBuilder.HasDefaultSchema("public");
-            base.OnModelCreating(modelBuilder);
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.EnableSensitiveDataLogging();
-            base.OnConfiguring(optionsBuilder);
+            return connString;
         }
     }
 }

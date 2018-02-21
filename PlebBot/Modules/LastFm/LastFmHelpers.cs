@@ -2,11 +2,12 @@
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using IF.Lastfm.Core.Api.Enums;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
 
@@ -199,9 +200,15 @@ namespace PlebBot.Modules
         //find a user in the database
         private async Task<User> DbFindUserAsync()
         {
-            var user = await _dbContext.Users.SingleOrDefaultAsync(
-                u => u.DiscordId == Context.User.Id.ToString());
-
+            User user;
+            using (var db = BotContext.OpenConnection())
+            {
+                var id = Context.User.Id.ToString();
+                user = 
+                    await db.QuerySingleOrDefaultAsync<User>(
+                    "select \"DiscordId\", \"LastFm\" from public.\"Users\" " +
+                    "where \"DiscordId\" = @discordId", new {discordId = id});
+            }
             return user;
         }
 

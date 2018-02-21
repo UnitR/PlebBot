@@ -46,8 +46,6 @@ namespace PlebBot
                 }))
                 .AddSingleton<Random>()
                 .AddSingleton(_config)
-                .AddEntityFrameworkNpgsql()
-                .AddDbContext<BotContext>(options => options.UseNpgsql(_config["connection_string"]))
                 //.AddSingleton<AudioService>()
                 .AddSingleton<YtService>()
                 .BuildServiceProvider();

@@ -1,9 +1,14 @@
 ﻿using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using PlebBot.Data;
+using PlebBot.Data.Models;
 using PlebBot.Helpers;
 
 namespace PlebBot
@@ -19,9 +24,19 @@ namespace PlebBot
             int argPos = 0;
             var context = new SocketCommandContext(_client, message);
 
-            var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == context.Guild.Id.ToString());
-            if (server == null) return;
-            var prefix = server.Prefix;
+            //var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == context.Guild.Id.ToString());
+
+            string prefix;
+            using (var conn = BotContext.OpenConnection())
+            {
+                var id = context.Guild.Id.ToString();
+                prefix =
+                    await conn.QueryFirstAsync<string>(
+                        "select \"Prefix\" from public.\"Servers\" where \"DiscordId\" = @discordId",
+                        new {discordId = id});
+            }
+
+            if ( prefix == null) return;
 
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
@@ -51,22 +66,24 @@ namespace PlebBot
         {
             if (guild == null) return;
 
-            _context.Servers.Add(new Data.Models.Server()
+            using (var conn = BotContext.OpenConnection())
             {
-                DiscordId = guild.Id.ToString()
-            });
-            await _context.SaveChangesAsync();
+                var id = guild.Id.ToString();
+                await conn.QuerySingleOrDefaultAsync<Server>(
+                    "insert into public.\"Servers\" (\"DiscordId\") values (@discordId)",
+                    new {discordId = id});
+            }
         }
 
         private async Task HandleLeaveGuildAsync(SocketGuild guild)
         {
             if (guild == null) return;
 
-            var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == guild.Id.ToString());
-            if (server != null)
+            using (var conn = BotContext.OpenConnection())
             {
-                _context.Servers.Remove(server);
-                await _context.SaveChangesAsync();
+                var id = guild.Id.ToString();
+                await conn.QueryAsync("delete from public.\"Servers\" where \"DiscordId\" = @discordId",
+                    new {discordId = id});
             }
         }
     }
