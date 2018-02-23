@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using Discord.Commands;
+using Discord.Rest;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
@@ -27,7 +28,7 @@ namespace PlebBot.Helpers
             });
         }
 
-        public async Task LinkVideoAsync(SocketCommandContext context, string query)
+        public async Task<RestUserMessage> LinkVideoAsync(SocketCommandContext context, string query)
         {
             var result = await GetSearchResultsAsync(query);
             if (result.Items.Count > 0)
@@ -48,10 +49,11 @@ namespace PlebBot.Helpers
                     response += $" | {String.Format("{0:n0}", video.Statistics.DislikeCount)} dislikes";
 
                 response += $"\nhttps://youtu.be/{videoId}";
-                await context.Channel.SendMessageAsync(response);
-                return;
+                var messsage = await context.Channel.SendMessageAsync(response);
+                return messsage;
             }
             await Response.Error(context, "No matching videos found.");
+            return null;
         }
 
         public async Task<string> DownloadVideoAsync(string query)

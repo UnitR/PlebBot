@@ -27,7 +27,7 @@
 //        public async Task Join()
 //        {
 //            await JoinAsync(Context);
-//            await Response.Success(
+//            await _response.Success(
 //                Context, $"Joined your voice channel, {Context.User.Mention}. Now let's get the party going!");
 //        }
 
@@ -63,7 +63,7 @@
 //            }
 //            catch (Exception ex)
 //            {
-//                await Response.Error(Context, "The requested video could not be played.");
+//                await _response.Error(Context, "The requested video could not be played.");
 //            }
 //        }
 

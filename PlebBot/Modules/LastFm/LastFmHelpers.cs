@@ -13,14 +13,21 @@ using PlebBot.Helpers;
 
 namespace PlebBot.Modules
 {
-    partial class LastFm
+    public partial class LastFm
     {
         private async Task SendYtLinkAsync(string username)
         {
             var scrobble = await _client.User.GetRecentScrobbles(username, null, 1, 1);
-            var track = scrobble.Content[0];
-            var ytService = new YtService();
-            await ytService.LinkVideoAsync(Context, $"{track.ArtistName} {track.Name}");
+            if (scrobble.TotalItems > 0)
+            {
+                var track = scrobble.Content[0];
+                var ytService = new YtService();
+                var response = await ytService.LinkVideoAsync(Context, $"{track.ArtistName} {track.Name}");
+
+                if (response != null) Cache.Add(Context.Message.Id, response.Id);
+                return;
+            }
+            await Response.Error(Context, "You haven't scrobbled any tracks.");
         }
 
         private async Task GetTopAlbumsAsync(string username, LastStatsTimeSpan span, int limit)
@@ -70,9 +77,11 @@ namespace PlebBot.Modules
                     timeSpan = "1month";
                     break;
                 case "3months":
+                case "3month":
                     timeSpan = "3month";
                     break;
                 case "6months":
+                case "6month":
                     timeSpan = "6month";
                     break;
                 case "year":
@@ -118,9 +127,11 @@ namespace PlebBot.Modules
                     timeSpan = LastStatsTimeSpan.Month;
                     break;
                 case "3months":
+                case "3month":
                     timeSpan = LastStatsTimeSpan.Quarter;
                     break;
                 case "6months":
+                case "6month":
                     timeSpan = LastStatsTimeSpan.Half;
                     break;
                 case "year":
@@ -159,7 +170,6 @@ namespace PlebBot.Modules
             return false;
         }
 
-        //TODO: last.fm user profile picture
         //show user's scrobbles
         private async Task NowPlayingAsync(string username)
         {
@@ -172,7 +182,10 @@ namespace PlebBot.Modules
 
                     string currAlbum = tracks[0].AlbumName ?? "";
                     string prevAlbum = tracks[1].AlbumName ?? "";
-                    string albumArt = (tracks[0].Images.Largest != null) ? tracks[0].Images.Largest.ToString() : "";
+
+                    var images = tracks[0].Images;
+                    var albumArt = "";
+                    if (images != null) albumArt = images.LastOrDefault(img => img != null)?.ToString();
 
                     var msg = new EmbedBuilder();
                     var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";

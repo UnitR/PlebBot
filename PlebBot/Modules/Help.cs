@@ -3,12 +3,12 @@ using Discord;
 using Discord.Commands;
 using System.Linq;
 using System.Threading.Tasks;
-using PlebBot.Data;
 using PlebBot.Helpers;
+using PlebBot.Helpers.CommandCache;
 
 namespace PlebBot.Modules
 {
-    public class Help : ModuleBase<SocketCommandContext>
+    public class Help : CommandCacheModuleBase<SocketCommandContext>
     {
         private readonly CommandService _service;
 

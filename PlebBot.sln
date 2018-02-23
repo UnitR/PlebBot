@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlebBot", "PlebBot\PlebBot.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlebBot.Data", "PlebBot.Data\PlebBot.Data.csproj", "{7912C2BB-83D0-459F-A19C-F1512FF7EFD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlebBot.Tests", "PlebBot.Tests\PlebBot.Tests.csproj", "{4AD73E52-6943-4F35-906C-276B12643532}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlebBot.Tests", "PlebBot.Tests\PlebBot.Tests.csproj", "{4AD73E52-6943-4F35-906C-276B12643532}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

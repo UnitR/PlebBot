@@ -6,10 +6,11 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using PlebBot.Helpers;
+using PlebBot.Helpers.CommandCache;
 
 namespace PlebBot.Modules
 {
-    class Miscellaneous : ModuleBase<SocketCommandContext>
+    public class Miscellaneous : CommandCacheModuleBase<SocketCommandContext>
     {
         [Command("ping")]
         [Summary("Ping!... Pong!")]
@@ -28,7 +29,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                await ReplyAsync($"Bless :pray:");
+                await ReplyAsync("Bless :pray:");
             }
         }
 
@@ -51,7 +52,9 @@ namespace PlebBot.Modules
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {
             var yt = new YtService();
-            await yt.LinkVideoAsync(Context, query);
+            var response = await yt.LinkVideoAsync(Context, query);
+
+            if(response != null) Cache.Add(Context.Message.Id, response.Id);
         }
 
         //choose a random element from a list and send the result

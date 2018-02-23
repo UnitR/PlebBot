@@ -6,10 +6,11 @@ using IF.Lastfm.Core.Api;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data;
 using PlebBot.Helpers;
+using PlebBot.Helpers.CommandCache;
 
 namespace PlebBot.Modules
 {
-    public partial class LastFm : ModuleBase<SocketCommandContext>
+    public partial class LastFm : CommandCacheModuleBase<SocketCommandContext>
     {
         private readonly LastfmClient _client;
         private readonly string _lastFmKey;

@@ -10,8 +10,6 @@ namespace PlebBot
 {
     public partial class Program
     {
-        //private readonly MessageCache _botResponses = new MessageCache();
-
         private async Task HandleCommandAsync(SocketMessage messageParam)
         {
             var message = messageParam as SocketUserMessage;
@@ -28,16 +26,16 @@ namespace PlebBot
                 prefix =
                     await conn.QueryFirstAsync<string>(
                         "select \"Prefix\" from public.\"Servers\" where \"DiscordId\" = @discordId",
-                        new {discordId = id});
+                        new { discordId = id });
             }
 
-            if ( prefix == null) return;
+            if (prefix == null) return;
 
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
 
             var typingState = message.Channel.EnterTypingState();
-            var result = await _commands.ExecuteAsync(context, argPos, _services);
+            var result = await _commands.ExecuteAsync(context, argPos, _provider);
 
             if (!result.IsSuccess && result.Error != CommandError.UnknownCommand && result.Error != CommandError.BadArgCount)
             {
@@ -45,17 +43,6 @@ namespace PlebBot
             }
             typingState.Dispose();
         }
-
-        //TODO: delete bot response if command message is deleted
-        //private async Task HandleMessageDeletedAsync(Cacheable<IMessage, ulong> message, ISocketMessageChannel channel)
-        //{
-        //    var msg = _botResponses.Remove(message.Id);
-        //    try
-        //    {
-        //        await msg.DeleteAsync();
-        //    }
-        //    catch (Exception) { }
-        //}
 
         private async Task HandleJoinGuildAsync(SocketGuild guild)
         {

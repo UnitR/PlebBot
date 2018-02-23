@@ -9,6 +9,7 @@ using Discord.Commands;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
+using PlebBot.Helpers.CommandCache;
 using PlebBot.Preconditions;
 
 namespace PlebBot.Modules
@@ -17,7 +18,7 @@ namespace PlebBot.Modules
     [Alias("s")]
     [Summary("Manage server settings")]
     [ManageServer]
-    public class Admin : ModuleBase<SocketCommandContext>
+    public class Admin : CommandCacheModuleBase<SocketCommandContext>
     {
         [Command("prefix")]
         [Summary("Change the command prefix")]
@@ -48,7 +49,6 @@ namespace PlebBot.Modules
     [Summary("Manage server roles")]
     public class Roles : ModuleBase<SocketCommandContext>
     {
-        //TODO: use private method
         [Command]
         [Summary("Get a list of the self-assignable roles")]
         public async Task GetAssignable()

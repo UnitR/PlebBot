@@ -4,7 +4,7 @@ using Discord.Commands;
 
 namespace PlebBot.Helpers
 {
-    class Response
+    public static class Response
     {
         public static async Task Success(SocketCommandContext context, string successText)
         {
