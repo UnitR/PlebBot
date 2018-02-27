@@ -14,10 +14,6 @@ using PlebBot.Preconditions;
 
 namespace PlebBot.Modules
 {
-    [Group("Server")]
-    [Alias("s")]
-    [Summary("Manage server settings")]
-    [ManageServer]
     public class Admin : CommandCacheModuleBase<SocketCommandContext>
     {
         [Command("prefix")]
@@ -41,6 +37,24 @@ namespace PlebBot.Modules
                     await Response.Success(Context, "Successfully updated the prefix for the server.");
                 }
             }
+        }
+
+        [Command("purge", RunMode = RunMode.Async)]
+        [Summary("Clear a channel of its messages")]
+        [Alias("prune")]
+        [ManageServer]
+        [RequireBotPermission(ChannelPermission.ManageMessages)]
+        public async Task PurgeMessages([Summary("The number of messages to delete")] uint amount)
+        {
+            var messages = await Context.Channel.GetMessagesAsync((int) amount).Flatten();
+            var list = messages.ToList();
+            list.RemoveAll(m => m.IsPinned);
+            var startMessage = await Context.Channel.SendMessageAsync("Purging channel...");
+            await Context.Channel.DeleteMessagesAsync(list);
+            await startMessage.DeleteAsync();
+            var endMessage = await Context.Channel.SendMessageAsync("Purge completed.");
+            await Task.Delay(5000);
+            await endMessage.DeleteAsync();
         }
     }
 
