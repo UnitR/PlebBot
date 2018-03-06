@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using Discord;
 using Discord.Commands;
-using PlebBot.Data;
 using PlebBot.Data.Models;
+using PlebBot.Data.Repositories;
 using PlebBot.Helpers;
 using PlebBot.Helpers.CommandCache;
 using PlebBot.Preconditions;
@@ -20,27 +19,28 @@ namespace PlebBot.Modules
     [ManageServer]
     public class Admin : CommandCacheModuleBase<SocketCommandContext>
     {
+        private readonly Repository<Server> serverRepo;
+
+        public Admin()
+        {
+            this.serverRepo = new Repository<Server>();
+        }
+
         [Command("prefix")]
         [Summary("Change the command prefix")]
         [ManageServer]
         public async Task ChangePrefix([Summary("The prefix you want to use")] string prefix)
         {
             var serverId = Context.Guild.Id.ToString();
-            using (var conn = BotContext.OpenConnection())
+            var condition = $"\"DiscordId\" = \'{serverId}\'";
+            var server = await serverRepo.FindFirst(condition);
+
+            if (server != null)
             {
-                var id =
-                    await conn.QuerySingleOrDefaultAsync<int>(
-                        "select \"Id\" from public.\"Servers\" where \"DiscordId\" = @discordId",
-                        new {discordId = serverId});
-
-                if (id != 0)
-                {
-                    await conn.ExecuteAsync("update public.\"Servers\" set \"Prefix\" = @prefix where \"Id\" = @id",
-                                            new {prefix = prefix, id = id});
-
-                    await Response.Success(Context, "Successfully updated the prefix for the server.");
-                }
+                await serverRepo.UpdateFirst("Prefix", prefix, $"\"Id\" = {server.Id}");
+                await Response.Success(Context, "Successfully updated the prefix for the server.");
             }
+
         }
     }
 
@@ -49,6 +49,15 @@ namespace PlebBot.Modules
     [Summary("Manage server roles")]
     public class Roles : ModuleBase<SocketCommandContext>
     {
+        private readonly Repository<Role> roleRepo;
+        private readonly Repository<Server> serverRepo;
+
+        public Roles()
+        {
+            this.roleRepo = new Repository<Role>();
+            this.serverRepo = new Repository<Server>();
+        }
+
         [Command]
         [Summary("Get a list of the self-assignable roles")]
         public async Task GetAssignable()
@@ -135,13 +144,8 @@ namespace PlebBot.Modules
         [Summary("Removes a role from you")]
         public async Task RemoveRole([Summary("The name of the role you want to remove")] string role)
         {
-            Role roleResult;
-            using (var conn = BotContext.OpenConnection())
-            {
-                roleResult = 
-                    await conn.QuerySingleOrDefaultAsync<Role>(
-                        "select * from public.\"Roles\" where lower(\"Name\") = @name", new {name = role.ToLower()});
-            }
+            var condition = $"lower(\"Name\") = \'{role.ToLower()}\'";
+            var roleResult = await roleRepo.FindFirst(condition);
 
             if (roleResult == null)
             {
@@ -150,8 +154,8 @@ namespace PlebBot.Modules
             }
 
             var user = Context.User as IGuildUser;
-            Debug.Assert(user != null, "user != null");
 
+            Debug.Assert(user != null, "user != null");
             var query = from r in user.RoleIds.AsParallel()
                         where r == ulong.Parse(roleResult.DiscordId)
                         select r;
@@ -175,53 +179,43 @@ namespace PlebBot.Modules
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task SetAssignable(
             [Summary("The role you want to make self-assignable")] string role,
-            [Summary("Marks the role as a colour role. Enables automatic colour removal and assigning of colours for users. Example: roles self Blue -c")] string colour = "")
+            [Summary(
+                "Marks the role as a colour role. Enables automatic colour removal and assigning of colours for users. Example: roles self Blue -c")] string colour = "")
         {
             var serverRoles = Context.Guild.Roles.ToList();
-            var roleFind = 
+            var roleFind =
                 serverRoles.Find(r => String.Equals(r.Name, role, StringComparison.CurrentCultureIgnoreCase));
 
-            using (var conn = BotContext.OpenConnection())
+            if (roleFind != null)
             {
-                if (roleFind != null)
+                var roleCondition = $"lower(\"Name\") = \'{role.ToLower()}\'";
+                var roleDb = await roleRepo.FindFirst(roleCondition);
+
+                if (roleDb == null)
                 {
-                    var query =
-                        await conn.QuerySingleOrDefaultAsync<Role>(
-                            "select * from public.\"Roles\" where \"Name\" = @name", new {name = role.ToLower()});
-                    if (query == null)
-                    {
-                        var isColour = false;
-                        var serverId =
-                            await conn.QuerySingleOrDefaultAsync<int>(
-                                "select \"Id\" from public.\"Servers\" where \"DiscordId\" = @discordId",
-                                new {discordId = Context.Guild.Id.ToString()});
-                        if (colour == "-c")
-                            isColour = true;
+                    var serverCondition = $"\"DiscordId\" = \'{Context.Guild.Id}\'";
+                    var server = await serverRepo.FindFirst(serverCondition);
+                    var serverId = server.Id;
 
-                        await conn.ExecuteAsync(
-                            "insert into public.\"Roles\" (\"ServerId\", \"DiscordId\", \"Name\", \"IsColour\") " +
-                            "values (@server, @discordId, @name, @colour",
-                            new
-                            {
-                                server = serverId,
-                                discordId = roleFind.Id.ToString(),
-                                name = roleFind.Name,
-                                colour = isColour
-                            });
+                    var isColour = colour == "-c";
 
-                        await Response.Success(Context,
-                            $"Added '{roleFind.Name}' to the list of self-assignable roles.");
-                    }
-                    else
-                    {
-                        await Response.Error(Context, $"The '{roleFind.Name}' role is already set as self-assignable.");
-                    }
+                    string[] columns = {"ServerId", "DiscordId", "Name", "IsColour"};
+                    object[] values = {serverId, roleFind.Id.ToString(), roleFind.Name, isColour};
+                    await roleRepo.Add(columns, values);
+
+                    await Response.Success(Context,
+                        $"Added '{roleFind.Name}' to the list of self-assignable roles.");
                 }
                 else
                 {
-                    await Response.Error(Context, $"No role with the name '{role}' was found in the server.");
+                    await Response.Error(Context, $"The '{roleFind.Name}' role is already set as self-assignable.");
                 }
             }
+            else
+            {
+                await Response.Error(Context, $"No role with the name '{role}' was found in the server.");
+            }
+
         }
 
         [Command("remove")]
@@ -229,41 +223,32 @@ namespace PlebBot.Modules
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task RemoveAssignable([Summary("The role whose name you wish to remove")] string role)
         {
-            using (var conn = BotContext.OpenConnection())
+            var condition = $"\"Name\" = \'{role.ToLower()}\'";
+            var roleToRemove = await roleRepo.FindFirst(condition);
+            if (roleToRemove != null)
             {
-                var remove = await conn.QuerySingleOrDefaultAsync<Role>(
-                        "select * from public.\"Roles\" where \"Name\" = @name", new { name = role.ToLower() });
+                var delCondition = $"\"Id\" = {roleToRemove.Id}";
+                await roleRepo.DeleteFirst(delCondition);
 
-                if (remove != null)
-                {
-                    await conn.ExecuteAsync("delete from \"Roles\" where \"Id\" = @id", new {id = remove.Id});
-
-                    await Response.Success(Context, $"The '{remove.Name}' role has been successfully " +
-                                                    $"removed from the self-assignable list.");
-                }
-                else
-                {
-                    await Response.Error(Context,
-                        $"No role with the name '{role}' has been found in the self-assignable list");
-                }
+                await Response.Success(Context, $"The '{roleToRemove.Name}' role has been successfully " +
+                                                $"removed from the self-assignable list.");
             }
+            else
+            {
+                await Response.Error(Context,
+                    $"No role with the name '{role}' has been found in the self-assignable list");
+            }
+
         }
 
         private async Task<List<Role>> GetServerRolesAsync()
         {
-            List<Role> roles;
-            using (var conn = BotContext.OpenConnection())
-            {
-                var serverId =
-                    await conn.QueryFirstAsync<int>(
-                        "select \"Id\" from public.\"Servers\" where \"DiscordId\" = @discordId",
-                        new {discordId = Context.Guild.Id.ToString()});
+            var serverCondition = $"\"DiscordId\" = \'{Context.Guild.Id}\'";
+            var server = await serverRepo.FindFirst(serverCondition);
+            var serverId = server.Id;
 
-                var sql = "select * from public.\"Roles\" " +
-                          "where \"ServerId\" = @id";
-                var query = await conn.QueryAsync<Role>(sql, new {id = serverId});
-                roles = query.ToList();
-            }
+            var roleCondition = $"\"ServerId\" = \'{serverId}\'";
+            var roles = await roleRepo.FindAll(roleCondition) as List<Role>;
 
             return roles;
         }

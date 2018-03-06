@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.4" />
+    <PackageReference Include="Dapper.Contrib" Version="1.50.4" />
     <PackageReference Include="Google.Apis.Core" Version="1.32.2" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.32.2.1131" />
     <PackageReference Include="Discord.Net" Version="1.0.2" />
