@@ -2,12 +2,10 @@
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Dapper;
 using Discord;
 using IF.Lastfm.Core.Api.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Helpers;
 
@@ -213,15 +211,10 @@ namespace PlebBot.Modules
         //find a user in the database
         private async Task<User> DbFindUserAsync()
         {
-            User user;
-            using (var db = BotContext.OpenConnection())
-            {
-                var id = Context.User.Id.ToString();
-                user = 
-                    await db.QuerySingleOrDefaultAsync<User>(
-                    "select \"DiscordId\", \"LastFm\" from public.\"Users\" " +
-                    "where \"DiscordId\" = @discordId", new {discordId = id});
-            }
+            var id = Context.User.Id.ToString();
+            var condition = $"\"DiscordId\" = \'{id}\'";
+            var user = await userRepo.FindFirst(condition);
+
             return user;
         }
 

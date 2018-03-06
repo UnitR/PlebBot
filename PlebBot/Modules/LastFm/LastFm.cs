@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Dapper;
 using Discord.Commands;
 using IF.Lastfm.Core.Api;
 using Microsoft.Extensions.Configuration;
-using PlebBot.Data;
+using PlebBot.Data.Models;
+using PlebBot.Data.Repositories;
 using PlebBot.Helpers;
 using PlebBot.Helpers.CommandCache;
 
@@ -14,12 +14,14 @@ namespace PlebBot.Modules
     {
         private readonly LastfmClient _client;
         private readonly string _lastFmKey;
+        private readonly Repository<User> userRepo;
 
         public LastFm()
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
             this._lastFmKey = config["tokens:lastfm_key"];
+            this.userRepo = new Repository<User>();
         }
 
         [Command("fm")]
@@ -57,39 +59,33 @@ namespace PlebBot.Modules
                 {
                     try
                     {
-                        using (var conn = BotContext.OpenConnection())
+                        var findCondition = $"\"DiscordId\" = \'{Context.User.Id}\'";
+                        var user = await userRepo.FindFirst(findCondition);
+
+                        if (user != null)
                         {
-                            var userId = 
-                                await conn.QueryFirstOrDefaultAsync<int>(
-                                "select \"Id\" from public.\"Users\" where \"DiscordId\" = @DiscordId",
-                                new {DiscordId = Context.User.Id.ToString()});
+                            var column = "LastFm";
+                            var value = username;
+                            var updateCondition = $"\"Id\" = {user.Id}";
+                            await userRepo.UpdateFirst(column, value, updateCondition);
 
-                            if (userId != 0)
-                            {
-                                await conn.ExecuteAsync(
-                                    "update public.\"Users\" set \"LastFm\" = @lastFm where \"Id\" = @id",
-                                    new {lastFm = username, id = userId});
+                            await Response.Success(Context, "Succesfully updated your last.fm username.");
+                        }
+                        else
+                        {
+                            string[] columns = {"DiscordId", "LastFm"};
+                            object[] values = {Context.User.Id.ToString(), username};
+                            await userRepo.Add(columns, values);
 
-                                await Response.Success(Context, "Succesfully updated your last.fm username.");
-                            }
-                            else
-                            {
-                                var discord = Context.User.Id.ToString();
-                                await conn.ExecuteAsync(
-                                    "insert into public.\"Users\" (\"DiscordId\", \"LastFm\") " +
-                                    "values (@discordId, @lastFm)",
-                                    new {discordId = discord, lastFm = username});
-
-                                await Response.Success(
-                                    Context, "last.fm username saved. You can now freely use the `fm` commands.");
-                            }
+                            await Response.Success(
+                                Context, "last.fm username saved. You can now freely use the `fm` commands.");
                         }
                     }
                     catch (Exception ex)
                     {
                         await Response.Error(
-                            Context,$"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
-                                    $"{ex.Message}");
+                            Context, $"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
+                                     $"{ex.Message}");
                     }
                 }
             }

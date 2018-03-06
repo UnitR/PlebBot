@@ -12,7 +12,7 @@ namespace PlebBot.Helpers.CommandCache
 {
     public class CommandCacheService : ICommandCache<ulong, ConcurrentBag<ulong>>, IDisposable
     {
-        public const int UNLIMITED = -1; // POWEEEEEEERRRRRRRR
+        public const int UNLIMITED = -1;
 
         private readonly ConcurrentDictionary<ulong, ConcurrentBag<ulong>> _cache
             = new ConcurrentDictionary<ulong, ConcurrentBag<ulong>>();
