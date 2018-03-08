@@ -18,14 +18,10 @@ namespace PlebBot.Helpers.CommandCache
             = new ConcurrentDictionary<ulong, ConcurrentBag<ulong>>();
         private int _max;
         private Timer _autoClear;
-        private Func<LogMessage, Task> _logger;
         private int _count;
 
-        public CommandCacheService(DiscordSocketClient client, int capacity = 200, Func<LogMessage, Task> log = null)
+        public CommandCacheService(DiscordSocketClient client, int capacity = 200)
         {
-            // If a method for logging is supplied, use it, otherwise use a method that does nothing.
-            _logger = log ?? (_ => Task.CompletedTask);
-
             // Make sure the max capacity is within an acceptable range, use it if it is.
             if (capacity < 1 && capacity != UNLIMITED)
             {
@@ -40,8 +36,6 @@ namespace PlebBot.Helpers.CommandCache
             _autoClear = new Timer(OnTimerFired, null, 1800000, 1800000);
 
             client.MessageDeleted += OnMessageDeleted;
-
-            _logger(new LogMessage(LogSeverity.Verbose, "CmdCache", $"Service initialised, MessageDeleted event handler registered."));
         }
 
         public IEnumerable<ulong> Keys => _cache.Keys;

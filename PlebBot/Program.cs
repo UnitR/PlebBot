@@ -33,7 +33,7 @@ namespace PlebBot
             _config = builder.Build();
 
             _services = new ServiceCollection();
-            _client = new DiscordSocketClient().UseCommandCache(_services, 200, Log);
+            _client = new DiscordSocketClient().UseCommandCache(_services, 200);
             _provider = ConfigureServices(_services);
 
             _commands = new CommandService();
@@ -71,7 +71,7 @@ namespace PlebBot
                 LogLevel = LogSeverity.Verbose
             })); 
             services.AddSingleton<YtService>();
-            services.AddSingleton(new HttpClient());
+            services.AddSingleton<HttpClient>();
             services.AddSingleton<Repository<User>>();
             services.AddSingleton<Repository<Server>>();
             services.AddSingleton<Repository<Role>>();

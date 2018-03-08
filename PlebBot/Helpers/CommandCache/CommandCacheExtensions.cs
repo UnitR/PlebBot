@@ -10,9 +10,9 @@ namespace PlebBot.Helpers.CommandCache
 {
     public static class CommandCacheExtensions
     {
-        public static DiscordSocketClient UseCommandCache(this DiscordSocketClient client, IServiceCollection services, int capacity, Func<LogMessage, Task> log)
+        public static DiscordSocketClient UseCommandCache(this DiscordSocketClient client, IServiceCollection services, int capacity)
         {
-            services.AddSingleton(new CommandCacheService(client, capacity, log));
+            services.AddSingleton(new CommandCacheService(client, capacity));
             return client;
         }
         public static async Task<IUserMessage> SendCachedMessageAsync(this IMessageChannel channel, CommandCacheService cache, ulong commandId, string text, bool prependZWSP = false)
