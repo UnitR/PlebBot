@@ -21,9 +21,9 @@ namespace PlebBot.Modules
     {
         private readonly Repository<Server> serverRepo;
 
-        public Admin()
+        public Admin(Repository<Server> repo)
         {
-            this.serverRepo = new Repository<Server>();
+            this.serverRepo = repo;
         }
 
         [Command("prefix")]
@@ -52,10 +52,10 @@ namespace PlebBot.Modules
         private readonly Repository<Role> roleRepo;
         private readonly Repository<Server> serverRepo;
 
-        public Roles()
+        public Roles(Repository<Role> roleRepo, Repository<Server> serverRepo)
         {
-            this.roleRepo = new Repository<Role>();
-            this.serverRepo = new Repository<Server>();
+            this.roleRepo = roleRepo;
+            this.serverRepo = serverRepo;
         }
 
         [Command]

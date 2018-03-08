@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Discord.Commands;
 using IF.Lastfm.Core.Api;
@@ -15,13 +16,15 @@ namespace PlebBot.Modules
         private readonly LastfmClient _client;
         private readonly string _lastFmKey;
         private readonly Repository<User> userRepo;
+        private readonly HttpClient httpClient;
 
-        public LastFm()
+        public LastFm(Repository<User> repo, HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
             this._lastFmKey = config["tokens:lastfm_key"];
-            this.userRepo = new Repository<User>();
+            this.userRepo = repo;
+            this.httpClient = client;
         }
 
         [Command("fm")]
