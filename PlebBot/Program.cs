@@ -2,10 +2,13 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using System;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using PlebBot.Data.Models;
+using PlebBot.Data.Repositories;
 using PlebBot.Helpers;
 using PlebBot.Helpers.CommandCache;
 
@@ -34,7 +37,7 @@ namespace PlebBot
             _provider = ConfigureServices(_services);
 
             _commands = new CommandService();
-            await InstallCommandsAsync();
+            await InstallAsync();
 
             await _client.LoginAsync(TokenType.Bot, _config["tokens:discord_token"]);
             await _client.SetGameAsync("top 40 hits");
@@ -50,7 +53,7 @@ namespace PlebBot
             return Task.CompletedTask;
         }
 
-        public async Task InstallCommandsAsync()
+        public async Task InstallAsync()
         {
             _client.Log += Log;
             _client.JoinedGuild += HandleJoinGuildAsync;
@@ -66,8 +69,12 @@ namespace PlebBot
             {
                 DefaultRunMode = RunMode.Async,
                 LogLevel = LogSeverity.Verbose
-            }));
+            })); 
             services.AddSingleton<YtService>();
+            services.AddSingleton(new HttpClient());
+            services.AddSingleton<Repository<User>>();
+            services.AddSingleton<Repository<Server>>();
+            services.AddSingleton<Repository<Role>>();
             services.AddSingleton(_config);
 
             return services.BuildServiceProvider();

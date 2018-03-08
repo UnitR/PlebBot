@@ -96,12 +96,9 @@ namespace PlebBot.Modules
             var url =
                 $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
                 $"&limit={limit}&api_key={_lastFmKey}&format=json";
-            string json;
-            using (WebClient wc = new WebClient())
-            {
-                json = await wc.DownloadStringTaskAsync(url);
-            }
+            var json = await this.httpClient.GetStringAsync(url);
             dynamic response = JsonConvert.DeserializeObject(json);
+
             var list = "";
             for (int i = 0; i < limit; i++)
             {
@@ -252,11 +249,7 @@ namespace PlebBot.Modules
                           $"{username}&from={offset}to={now}&api_key={_lastFmKey}" +
                           $"&page=1&limit=200&format=json";
 
-                string json;
-                using (WebClient wc = new WebClient())
-                {
-                    json = await wc.DownloadStringTaskAsync(url);
-                }
+                var json = await this.httpClient.GetStringAsync(url);
                 dynamic response = (JObject) JsonConvert.DeserializeObject(json);
 
                 scrobbles = response.recenttracks["@attr"].total;

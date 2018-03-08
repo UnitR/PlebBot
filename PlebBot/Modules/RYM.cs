@@ -14,9 +14,9 @@ namespace PlebBot.Modules
     {
         private readonly Repository<User> userRepo;
 
-        public RYM()
+        public RYM(Repository<User> repo)
         {
-            userRepo = new Repository<User>();
+            this.userRepo = repo;
         }
 
         [Command("set")]
