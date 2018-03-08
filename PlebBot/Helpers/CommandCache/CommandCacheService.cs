@@ -157,8 +157,6 @@ namespace PlebBot.Helpers.CommandCache
             var removed = purge.Where(p => Remove(p.Key));
 
             UpdateCount();
-
-            _logger(new LogMessage(LogSeverity.Verbose, "CmdCache", $"Cleaned {removed.Count()} items from the cache."));
         }
 
         private async Task OnMessageDeleted(Cacheable<IMessage, ulong> cacheable, ISocketMessageChannel channel)
@@ -171,10 +169,6 @@ namespace PlebBot.Helpers.CommandCache
                     if (message != null)
                     {
                         await message.DeleteAsync();
-                    }
-                    else
-                    {
-                        await _logger(new LogMessage(LogSeverity.Warning, "CmdCache", $"{cacheable.Id} deleted but {messageId} does not exist."));
                     }
                 }
                 Remove(cacheable.Id);
