@@ -18,9 +18,7 @@ namespace PlebBot
             int argPos = 0;
             var context = new SocketCommandContext(_client, message);
 
-            //var server = await _context.Servers.SingleOrDefaultAsync(s => s.DiscordId == context.Guild.Id.ToString());
-
-            var condition = $"\"DiscordId\" = \'{context.Guild.Id}\'";
+            var condition = $"\"DiscordId\" = {context.Guild.Id}";
             var server = await serverRepo.FindFirst(condition);
             var prefix = server.Prefix;
 
@@ -31,18 +29,21 @@ namespace PlebBot
 
             var result = await _commands.ExecuteAsync(context, argPos, _provider);
 
-            if (!result.IsSuccess && result.Error != CommandError.UnknownCommand &&
-                result.Error != CommandError.BadArgCount)
-            {
+            Error(result, context);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private async void Error(IResult result, SocketCommandContext context)
+        {
+            if(!result.IsSuccess)
                 await Response.Error(context, result.ErrorReason);
-            }
         }
 
         private async Task HandleJoinGuildAsync(SocketGuild guild)
         {
             if (guild == null) return;
 
-            var id = guild.Id.ToString();
+            var id = guild.Id;
             await serverRepo.Add("DiscordId", id);
         }
 
@@ -50,7 +51,7 @@ namespace PlebBot
         {
             if (guild == null) return;
 
-            var condition = $"\"DiscordId\" = \'{guild.Id}\'";
+            var condition = $"\"DiscordId\" = {guild.Id}";
             await serverRepo.DeleteFirst(condition);
         }
     }

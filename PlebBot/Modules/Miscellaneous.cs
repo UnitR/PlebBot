@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using PlebBot.Helpers;
 using PlebBot.Helpers.CommandCache;
 
@@ -13,24 +12,43 @@ namespace PlebBot.Modules
     public class Miscellaneous : CommandCacheModuleBase<SocketCommandContext>
     {
         [Command("ping")]
-        [Summary("Ping!... Pong!")]
+        [Summary("Used for testing connection")]
         public async Task PingPong()
         {
             await ReplyAsync("...Pong!");
         }
 
-        [Command("bless")]
+        [Command("bless", RunMode = RunMode.Async)]
         [Summary("Blessed be the rains down in Africa")]
-        public async Task Bless([Summary("User to bless the rains with")] SocketUser user = null)
+        public async Task Bless([Summary("User to bless the rains with")] [Remainder] string username = "")
         {
-            if (user != null)
-            {
-                await ReplyAsync($"Bless you, {user.Mention} :pray:");
-            }
-            else
+            if (username == String.Empty)
             {
                 await ReplyAsync("Bless :pray:");
+                return;
             }
+
+            var mention = "";
+            username = username.ToLowerInvariant();
+
+            if (username == "pleb") mention = @"<@287097793514831873>";
+            else
+            {
+                foreach (var user in Context.Guild.Users)
+                {
+                    if (user.Username.ToLowerInvariant().Contains(username))
+                    {
+                        mention = user.Mention;
+                        break;
+                    }
+
+                    if (user.Nickname == null || !user.Nickname.ToLowerInvariant().Contains(username)) continue;
+
+                    mention = user.Mention;
+                    break;
+                }
+            }
+            await ReplyAsync($"Bless you, {mention} :pray:");
         }
 
         [Command("choose")]
@@ -47,7 +65,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Command("yt")]
+        [Command("yt", RunMode = RunMode.Async)]
         [Summary("Link a YtService video")]
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {
