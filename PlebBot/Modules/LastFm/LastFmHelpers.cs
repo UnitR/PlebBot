@@ -208,8 +208,8 @@ namespace PlebBot.Modules
         //find a user in the database
         private async Task<User> DbFindUserAsync()
         {
-            var id = Context.User.Id.ToString();
-            var condition = $"\"DiscordId\" = \'{id}\'";
+            var id = Context.User.Id;
+            var condition = $"\"DiscordId\" = {id}";
             var user = await userRepo.FindFirst(condition);
 
             return user;

@@ -25,14 +25,14 @@ namespace PlebBot.Modules
         {
             if (username != null)
             {
-                var user = await userRepo.FindFirst($"\"DiscordId\" = \'{Context.User.Id}\'");
+                var user = await userRepo.FindFirst($"\"DiscordId\" = {Context.User.Id}");
                 if (user != null)
                 {
                     await userRepo.UpdateFirst("Rym", username, $"\"Id\" = {user.Id}");
                 }
                 else
                 {
-                    var discordId = Context.User.Id.ToString();
+                    var discordId = Context.User.Id;
                     string[] columns = {"DiscordId", "Rym"};
                     object[] values = {discordId, username};
                     await userRepo.Add(columns, values);
@@ -50,7 +50,7 @@ namespace PlebBot.Modules
         public async Task LinkProfile()
         {
             var userId = Context.User.Id;
-            var condition = $"\"DiscordId\" = \'{userId}\'";
+            var condition = $"\"DiscordId\" = {userId}";
             var user = await userRepo.FindFirst(condition);
 
             if (user?.Rym == null)

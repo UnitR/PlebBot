@@ -20,13 +20,13 @@ namespace PlebBot.Tests
                 var query =
                     conn.Query<User>("select \"DiscordId\", \"LastFm\" " +
                                      "from public.\"Users\" where \"DiscordId\" = @discordId",
-                                     new { discordId = "164102776035475458" });
+                                     new { discordId = 164102776035475458 });
                 user = query.First();
             }
 
             var expected = new User()
             {
-                DiscordId = "164102776035475458",
+                DiscordId = 164102776035475458,
                 LastFm = "UnitR_",
             };
             var actual = user;
@@ -38,7 +38,7 @@ namespace PlebBot.Tests
         [TestMethod]
         public void Insert()
         {
-            const string discordId = "369907714819751938";
+            const ulong discordId = 369907714819751938;
             const string lastFm = "UnitR_";
             const string rym = "UnitR";
             const string table = "Users";
@@ -72,14 +72,14 @@ namespace PlebBot.Tests
                     new {id = discordId});
             }
 
-            Assert.AreEqual("369907714819751938", id, "Wrong ID.");
+            Assert.AreEqual(369907714819751938, id, "Wrong ID.");
         }
 
         [TestMethod]
         public void RepositoryInsert()
         {
             string[] columns = {"DiscordId", "LastFm"};
-            dynamic[] values = {"369907714819751938", "UnitR_"};
+            dynamic[] values = {369907714819751938, "UnitR_"};
             var userRepo = new Repository<User>();
             var result = userRepo.Add(columns, values).Result;
 
@@ -89,8 +89,8 @@ namespace PlebBot.Tests
         [TestMethod]
         public void RepositoryFindFirst()
         {
-            const string condition = "\"DiscordId\" = \'164102776035475458\'";
-            const string discordId = "164102776035475458";
+            const string condition = "\"DiscordId\" = 164102776035475458";
+            const long discordId = 164102776035475458;
             var userRepo = new Repository<User>();
             var result = userRepo.FindFirst(condition).Result;
 
@@ -121,7 +121,7 @@ namespace PlebBot.Tests
         [TestMethod]
         public void RepositoryDeleteAll()
         {
-            const string condition = "\"DiscordId\" = \'369907714819751938\'";
+            const string condition = "\"DiscordId\" = 369907714819751938";
             var userRepo = new Repository<User>();
             var result = userRepo.DeleteAll(condition).Result;
 

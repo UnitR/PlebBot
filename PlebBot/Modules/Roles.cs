@@ -65,7 +65,7 @@ namespace PlebBot.Modules
                 if (roleResult != null)
                 {
                     var userRoles = (Context.User as IGuildUser)?.RoleIds;
-                    var contains = userRoles?.Contains(ulong.Parse(roleResult.DiscordId));
+                    var contains = userRoles?.Contains((ulong) roleResult.DiscordId);
                     if (!contains.GetValueOrDefault())
                     {
                         var assign =
@@ -76,13 +76,11 @@ namespace PlebBot.Modules
                             var colours = roles.Where(r => r.IsColour).ToList();
                             foreach (var colour in colours)
                             {
-                                contains = userRoles?.Contains(ulong.Parse(colour.DiscordId));
+                                contains = userRoles?.Contains((ulong) colour.DiscordId);
                                 if (!contains.GetValueOrDefault()) continue;
                                 var unassign =
                                     Context.Guild.Roles.SingleOrDefault(
-                                        r => String.Equals(
-                                            r.Id.ToString(), colour.DiscordId,
-                                            StringComparison.CurrentCultureIgnoreCase));
+                                        r => r.Id == (ulong) colour.DiscordId);
 
                                 await ((IGuildUser)Context.User).RemoveRoleAsync(unassign);
                             }
@@ -124,7 +122,7 @@ namespace PlebBot.Modules
 
             Debug.Assert(user != null, "user != null");
             var query = from r in user.RoleIds.AsParallel()
-                where r == ulong.Parse(roleResult.DiscordId)
+                where r == (ulong) roleResult.DiscordId
                 select r;
 
             if (query.Count() != 0)
@@ -160,14 +158,14 @@ namespace PlebBot.Modules
 
                 if (roleDb == null)
                 {
-                    var serverCondition = $"\"DiscordId\" = \'{Context.Guild.Id}\'";
+                    var serverCondition = $"\"DiscordId\" = {Context.Guild.Id}";
                     var server = await serverRepo.FindFirst(serverCondition);
                     var serverId = server.Id;
 
                     var isColour = colour == "-c";
 
                     string[] columns = { "ServerId", "DiscordId", "Name", "IsColour" };
-                    object[] values = { serverId, roleFind.Id.ToString(), roleFind.Name, isColour };
+                    object[] values = { serverId, roleFind.Id, roleFind.Name, isColour };
                     await roleRepo.Add(columns, values);
 
                     await Response.Success(Context,
@@ -210,11 +208,11 @@ namespace PlebBot.Modules
 
         private async Task<List<Role>> GetServerRolesAsync()
         {
-            var serverCondition = $"\"DiscordId\" = \'{Context.Guild.Id}\'";
+            var serverCondition = $"\"DiscordId\" = {Context.Guild.Id}";
             var server = await serverRepo.FindFirst(serverCondition);
             var serverId = server.Id;
 
-            var roleCondition = $"\"ServerId\" = \'{serverId}\'";
+            var roleCondition = $"\"ServerId\" = {serverId}";
             var roles = await roleRepo.FindAll(roleCondition) as List<Role>;
 
             return roles;

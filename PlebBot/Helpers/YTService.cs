@@ -38,8 +38,7 @@ namespace PlebBot.Helpers
                 if (videoMinutes[0] == '0') videoMinutes = videoMinutes.Remove(0, 1);
                 var videoSeconds = XmlConvert.ToTimeSpan(video.ContentDetails.Duration).ToString(@"ss");
 
-                var response = $"{video.Snippet.Title} | " +
-                               $"{String.Format("{0:n0}", video.Statistics.ViewCount)} views | " +
+                var response = $"{String.Format("{0:n0}", video.Statistics.ViewCount)} views | " +
                                $"Duration: {videoMinutes} minutes {videoSeconds} seconds";
 
                 if (video.Statistics.LikeCount != null)

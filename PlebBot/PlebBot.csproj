@@ -43,9 +43,4 @@
     <ProjectReference Include="..\PlebBot.Tests\PlebBot.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Temp\" />
-    <Folder Include="TypeReaders\" />
-  </ItemGroup>
-
 </Project>

@@ -26,8 +26,8 @@ namespace PlebBot.Modules
         [ManageServer]
         public async Task ChangePrefix([Summary("The prefix you want to use")] string prefix)
         {
-            var serverId = Context.Guild.Id.ToString();
-            var condition = $"\"DiscordId\" = \'{serverId}\'";
+            var serverId = Context.Guild.Id;
+            var condition = $"\"DiscordId\" = {serverId}";
             var server = await serverRepo.FindFirst(condition);
 
             if (server != null)
@@ -35,7 +35,6 @@ namespace PlebBot.Modules
                 await serverRepo.UpdateFirst("Prefix", prefix, $"\"Id\" = {server.Id}");
                 await Response.Success(Context, "Successfully updated the prefix for the server.");
             }
-
         }
     }
 }

@@ -70,11 +70,10 @@ namespace PlebBot
                 DefaultRunMode = RunMode.Async,
                 LogLevel = LogSeverity.Verbose
             })); 
-            services.AddSingleton<YtService>();
             services.AddSingleton<HttpClient>();
-            services.AddSingleton<Repository<User>>();
-            services.AddSingleton<Repository<Server>>();
-            services.AddSingleton<Repository<Role>>();
+            services.AddTransient<Repository<Server>>();
+            services.AddTransient<Repository<Role>>();
+            services.AddTransient<Repository<User>>();
             services.AddSingleton(_config);
 
             return services.BuildServiceProvider();
