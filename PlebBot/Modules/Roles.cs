@@ -53,7 +53,7 @@ namespace PlebBot.Modules
         }
 
         [Command]
-        [Alias("get")]
+        [Alias("get", "set")]
         [Summary("Get a self-assignable role")]
         public async Task GetRole([Summary("The name of the role you wish to obtain")] string role)
         {
