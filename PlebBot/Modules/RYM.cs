@@ -34,7 +34,7 @@ namespace PlebBot.Modules
                 {
                     var discordId = Context.User.Id;
                     string[] columns = {"DiscordId", "Rym"};
-                    object[] values = {discordId, username};
+                    object[] values = {(long) discordId, username};
                     await userRepo.Add(columns, values);
                 }
 
