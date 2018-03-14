@@ -116,13 +116,19 @@ namespace PlebBot.Modules
             switch (span.ToLower())
             {
                 case "week":
+                case "7days":
+                case "7day":
                     timeSpan = LastStatsTimeSpan.Week;
                     break;
                 case "month":
+                case "30day":
+                case "30days":
                     timeSpan = LastStatsTimeSpan.Month;
                     break;
                 case "3months":
                 case "3month":
+                case "90days":
+                case "90day":
                     timeSpan = LastStatsTimeSpan.Quarter;
                     break;
                 case "6months":
