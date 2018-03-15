@@ -75,7 +75,7 @@ namespace PlebBot.Modules
                         else
                         {
                             string[] columns = {"DiscordId", "LastFm"};
-                            object[] values = {Context.User.Id, username};
+                            object[] values = {(long) Context.User.Id, username};
                             await userRepo.Add(columns, values);
 
                             await this.Success("last.fm username saved. You can now freely use the `fm` commands.");

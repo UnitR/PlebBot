@@ -77,6 +77,49 @@ namespace PlebBot.Services
 
         private Task<EmbedBuilder> BuildCurrentWeatherEmbed(dynamic observation)
         {
+            var kmh = (observation.wind_kph != 0) ? $"{observation.wind_kph} km/h" : "";
+            var mph = (observation.wind_mph != 0) ? $"({observation.wind_mph} mph)" : "";
+            string windDir = observation.wind_dir.ToString();
+            switch (windDir.ToLowerInvariant())
+            {
+                case "nnw":
+                case "n":
+                case "nne":
+                    windDir = "north";
+                    break;
+                case "ne":
+                    windDir = "northeast";
+                    break;
+                case "ene":
+                case "e":
+                case "ese":
+                    windDir = "east";
+                    break;
+                case "se":
+                    windDir = "southeast";
+                    break;
+                case "sse":
+                case "s":
+                case "ssw":
+                    windDir = "south";
+                    break;
+                case "sw":
+                    windDir = "southwest";
+                    break;
+                case "wsw":
+                case "w":
+                case "wnw":
+                    windDir = "west";
+                    break;
+                case "nw":
+                    windDir = "northwest";
+                    break;
+                default:
+                    windDir = "";
+                    break;
+            }
+            var windText = (windDir != String.Empty) ? $"Moving {windDir} at {kmh} {mph}" : "No wind";
+
             var embed = new EmbedBuilder();
             embed.WithTitle($"Current weather in {observation.display_location.full}");
             embed.WithUrl(observation.forecast_url.ToString());
@@ -84,10 +127,8 @@ namespace PlebBot.Services
             embed.AddInlineField(
                 "Weather Condition:",
                 $"{observation.weather} | Feels like " +
-                $"{observation.feelslike_c} Celsius ({observation.feelslike_f} Fahrenheit)");
-            embed.AddInlineField(
-                "Wind:",
-                $"{observation.wind_string} ({observation.wind_kph} km/h)");
+                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F)");
+            embed.AddInlineField("Wind:", windText);
             embed.AddInlineField("Humidity:", $"{observation.relative_humidity}");
             embed.WithColor(237, 126, 0);
 

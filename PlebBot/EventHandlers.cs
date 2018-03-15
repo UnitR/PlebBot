@@ -42,7 +42,7 @@ namespace PlebBot
         {
             if (guild == null) return;
 
-            var id = guild.Id;
+            var id = (long) guild.Id;
             await serverRepo.Add("DiscordId", id);
         }
 
