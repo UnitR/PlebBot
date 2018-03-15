@@ -4,12 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
+using PlebBot.Services;
 
 namespace PlebBot.Modules
 {
-    public class Miscellaneous : CommandCacheModuleBase<SocketCommandContext>
+    public class Miscellaneous : BaseModule
     {
         [Command("ping")]
         [Summary("Used for testing connection")]
@@ -55,14 +54,11 @@ namespace PlebBot.Modules
         [Summary("Makes a decision for you")]
         public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choice_list)
         {
-            string[] options = choice_list.Split(',');
+            var options = choice_list.Split(',');
             options = options.Where((val, idx) => val.Trim() != "").ToArray();
-            if (options.Length > 1)
-            {
-                await PickRandom(options);
-            } else {
-                await Response.Error(Context, "You must provide a comma-separated list of options.");
-            }
+
+            if (options.Length > 1) await PickRandom(options);
+            else await this.Error("You must provide a comma-separated list of options.");
         }
 
         [Command("yt", RunMode = RunMode.Async)]
@@ -70,9 +66,14 @@ namespace PlebBot.Modules
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {
             var yt = new YtService();
-            var response = await yt.LinkVideoAsync(Context, query);
+            var response = await yt.GetVideoLinkAsync(Context, query);
+            if (response != null)
+            {
+                await ReplyAsync(response);
+                return;
+            }
 
-            if(response != null) Cache.Add(Context.Message.Id, response.Id);
+            await this.Error("No videos found.");
         }
 
         //choose a random element from a list and send the result
@@ -84,7 +85,7 @@ namespace PlebBot.Modules
                 .WithDescription(options[select])
                 .WithColor(Color.DarkGreen);
 
-            await ReplyAsync("", false, response.Build());
+            await ReplyAsync("", embed: response.Build());
         }
     }
 }

@@ -7,18 +7,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using PlebBot.Helpers.CommandCache;
 
-namespace PlebBot.Helpers.CommandCache
+// ReSharper disable once CheckNamespace
+namespace PlebBot.CommandCache
 {
     public class CommandCacheService : ICommandCache<ulong, ConcurrentBag<ulong>>, IDisposable
     {
         public const int UNLIMITED = -1;
 
-        private readonly ConcurrentDictionary<ulong, ConcurrentBag<ulong>> _cache
+        private readonly ConcurrentDictionary<ulong, ConcurrentBag<ulong>> cache
             = new ConcurrentDictionary<ulong, ConcurrentBag<ulong>>();
-        private int _max;
-        private Timer _autoClear;
-        private int _count;
+        private readonly int max;
+        private Timer autoClear;
+        private int count;
 
         public CommandCacheService(DiscordSocketClient client, int capacity = 200)
         {
@@ -29,20 +31,20 @@ namespace PlebBot.Helpers.CommandCache
             }
             else
             {
-                _max = capacity;
+                max = capacity;
             }
 
             // Create a timer that will clear out cached messages older than 2 hours every 30 minutes.
-            _autoClear = new Timer(OnTimerFired, null, 1800000, 1800000);
+            autoClear = new Timer(OnTimerFired, null, 1800000, 1800000);
 
             client.MessageDeleted += OnMessageDeleted;
         }
 
-        public IEnumerable<ulong> Keys => _cache.Keys;
+        public IEnumerable<ulong> Keys => cache.Keys;
 
-        public IEnumerable<ConcurrentBag<ulong>> Values => _cache.Values;
+        public IEnumerable<ConcurrentBag<ulong>> Values => cache.Values;
 
-        public int Count => _count;
+        public int Count => count;
 
         public void Add(ulong key, ConcurrentBag<ulong> values)
         {
@@ -51,11 +53,11 @@ namespace PlebBot.Helpers.CommandCache
                 throw new ArgumentNullException(nameof(values), "The supplied collection can not be null.");
             }
 
-            if (_max != UNLIMITED && _count >= _max)
+            if (max != UNLIMITED && count >= max)
             {
-                int removeCount = _count - _max + 1;
+                int removeCount = count - max + 1;
                 // The left 42 bits represent the timestamp.
-                var orderedKeys = _cache.Keys.OrderBy(k => k >> 22).ToList();
+                var orderedKeys = Enumerable.OrderBy<ulong, ulong>(cache.Keys, k => k >> 22).ToList();
                 // Remove items until we're under the maximum.
                 int successfulRemovals = 0;
                 foreach (var orderedKey in orderedKeys)
@@ -66,18 +68,18 @@ namespace PlebBot.Helpers.CommandCache
                     if (success) successfulRemovals++;
                 }
 
-                // Reset _count to _cache.Count.
+                // Reset _count to cache.Count.
                 UpdateCount();
             }
 
             // TryAdd will return false if the key already exists, in which case we don't want to increment the count.
-            if (_cache.TryAdd(key, values))
+            if (cache.TryAdd(key, values))
             {
-                Interlocked.Increment(ref _count);
+                Interlocked.Increment(ref count);
             }
             else
             {
-                _cache[key].AddMany(values);
+                CommandCacheExtensions.AddMany(cache[key], values);
             }
         }
 
@@ -101,22 +103,22 @@ namespace PlebBot.Helpers.CommandCache
 
         public void Clear()
         {
-            _cache.Clear();
-            Interlocked.Exchange(ref _count, 0);
+            cache.Clear();
+            Interlocked.Exchange(ref count, 0);
         }
 
-        public bool ContainsKey(ulong key) => _cache.ContainsKey(key);
+        public bool ContainsKey(ulong key) => cache.ContainsKey(key);
 
-        public IEnumerator<KeyValuePair<ulong, ConcurrentBag<ulong>>> GetEnumerator() => _cache.GetEnumerator();
+        public IEnumerator<KeyValuePair<ulong, ConcurrentBag<ulong>>> GetEnumerator() => cache.GetEnumerator();
 
         public bool Remove(ulong key)
         {
-            var success = _cache.TryRemove(key, out ConcurrentBag<ulong> _);
-            if (success) Interlocked.Decrement(ref _count);
+            var success = cache.TryRemove(key, out ConcurrentBag<ulong> _);
+            if (success) Interlocked.Decrement(ref count);
             return success;
         }
 
-        public bool TryGetValue(ulong key, out ConcurrentBag<ulong> value) => _cache.TryGetValue(key, out value);
+        public bool TryGetValue(ulong key, out ConcurrentBag<ulong> value) => cache.TryGetValue(key, out value);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -127,23 +129,22 @@ namespace PlebBot.Helpers.CommandCache
 
         protected void Dispose(bool disposing)
         {
-            if (disposing && _autoClear != null)
-            {
-                _autoClear.Dispose();
-                _autoClear = null;
-            }
+            if (!disposing || autoClear == null) return;
+
+            autoClear.Dispose();
+            autoClear = null;
         }
 
         private void OnTimerFired(object state)
         {
             // Get all messages where the timestamp is older than 2 hours, then convert it to a list. The result of where merely contains references to the original
             // collection, so iterating and removing will throw an exception. Converting it to a list first avoids this.
-            var purge = _cache.Where(p =>
+            var purge = Enumerable.Where<KeyValuePair<ulong, ConcurrentBag<ulong>>>(cache, p =>
             {
                 // The timestamp of a message can be calculated by getting the leftmost 42 bits of the ID, then
                 // adding January 1, 2015 as a Unix timestamp.
-                DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeMilliseconds((long)((p.Key >> 22) + 1420070400000UL));
-                TimeSpan difference = DateTimeOffset.UtcNow - timestamp;
+                var timestamp = DateTimeOffset.FromUnixTimeMilliseconds((long)((p.Key >> 22) + 1420070400000UL));
+                var difference = DateTimeOffset.UtcNow - timestamp;
 
                 return difference.TotalHours >= 2.0;
             }).ToList();
@@ -169,6 +170,6 @@ namespace PlebBot.Helpers.CommandCache
             }
         }
 
-        private void UpdateCount() => Interlocked.Exchange(ref _count, _cache.Count);
+        private void UpdateCount() => Interlocked.Exchange(ref count, cache.Count);
     }
 }

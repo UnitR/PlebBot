@@ -1,12 +1,11 @@
-﻿using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace PlebBot.Helpers.CommandCache
+namespace PlebBot.CommandCache
 {
     public static class CommandCacheExtensions
     {

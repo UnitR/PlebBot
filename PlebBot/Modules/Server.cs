@@ -2,8 +2,6 @@
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
 using PlebBot.Preconditions;
 
 namespace PlebBot.Modules
@@ -12,7 +10,7 @@ namespace PlebBot.Modules
     [Alias("s")]
     [Summary("Manage server settings")]
     [ManageServer]
-    public class Admin : CommandCacheModuleBase<SocketCommandContext>
+    public class Admin : BaseModule
     {
         private readonly Repository<Server> serverRepo;
 
@@ -33,7 +31,7 @@ namespace PlebBot.Modules
             if (server != null)
             {
                 await serverRepo.UpdateFirst("Prefix", prefix, $"\"Id\" = {server.Id}");
-                await Response.Success(Context, "Successfully updated the prefix for the server.");
+                await this.Success("Successfully updated the prefix for the server.");
             }
         }
     }

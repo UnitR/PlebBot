@@ -3,18 +3,17 @@ using Discord;
 using Discord.Commands;
 using System.Linq;
 using System.Threading.Tasks;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
 
 namespace PlebBot.Modules
 {
-    public class Help : CommandCacheModuleBase<SocketCommandContext>
+    //TODO: Completely redesign this module
+    public class Help : BaseModule
     {
-        private readonly CommandService _service;
+        private readonly CommandService service;
 
         public Help(CommandService service)
         {
-            _service = service;
+            this.service = service;
         }
 
         [Command("help")]
@@ -26,54 +25,52 @@ namespace PlebBot.Modules
                 Title = "Available commands:"
             };
 
-            foreach (var module in _service.Modules)
+            foreach (var module in service.Modules)
             {
-                if (!String.Equals(module.Name, "help", StringComparison.CurrentCultureIgnoreCase))
+                if (String.Equals(module.Name, "help", StringComparison.CurrentCultureIgnoreCase)) continue;
+
+                string description = null;
+                foreach (var cmd in module.Commands)
                 {
-                    string description = null;
-                    foreach (var cmd in module.Commands)
+                    var result = await cmd.CheckPreconditionsAsync(Context);
+                    if (!result.IsSuccess) continue;
+
+                    description += $"{cmd.Aliases.First()} ";
+                    if (cmd.Parameters != null)
                     {
-                        var result = await cmd.CheckPreconditionsAsync(Context);
-                        if (result.IsSuccess)
+                        var parameters = cmd.Parameters.ToList();
+                        foreach (var param in parameters)
                         {
-                            description += $"{cmd.Aliases.First()} ";
-                            if (cmd.Parameters != null)
-                            {
-                                var parameters = cmd.Parameters.ToList();
-                                foreach (var param in parameters)
-                                {
-                                    if (param.IsOptional)
-                                        description += $"({param.Name}) ";
-                                    else
-                                        description += $"[{param.Name}] ";
-                                }
-                            }
-                            description += $"- *{cmd.Summary}*\n";
+                            if (param.IsOptional)
+                                description += $"({param.Name}) ";
+                            else
+                                description += $"[{param.Name}] ";
                         }
                     }
+                    description += $"- *{cmd.Summary}*\n";
+                }
 
-                    if (!string.IsNullOrWhiteSpace(description) && module.Name != "Help")
+                if (!string.IsNullOrWhiteSpace(description) && module.Name != "Help")
+                {
+                    builder.AddField(x =>
                     {
-                        builder.AddField(x =>
-                        {
-                            x.Name = module.Name;
-                            x.Value = description;
-                            x.IsInline = false;
-                        });
-                    }
+                        x.Name = module.Name;
+                        x.Value = description;
+                        x.IsInline = false;
+                    });
                 }
             }
 
             builder.AddField(
                 "Additional help:", 
                 "For more help regarding a command use `help [command name]` without the brackets.");
-            await ReplyAsync("", false, builder.Build());
+            await ReplyAsync("", embed: builder.Build());
         }
 
         [Command("help")]
         public async Task HelpAsync(params string[] command)
         {
-            string cmd = "";
+            var cmd = "";
             foreach (var item in command)
             {
                 cmd += $"{item} ";
@@ -81,43 +78,42 @@ namespace PlebBot.Modules
             cmd = cmd.Remove(cmd.Length - 1);
 
             var builder = new EmbedBuilder();
-            var result = _service.Search(Context, cmd);
+            var result = service.Search(Context, cmd);
 
             if (!result.IsSuccess)
             {
-                await Response.Error(Context, $"\"Sorry, I couldn\'t find a command like `{cmd}`");
+                await this.Error($"\"Sorry, I couldn\'t find a command like `{cmd}`");
                 return;
             }
 
             builder.Color = Color.Green;
             foreach (var match in result.Commands)
             {
-                if (match.Command.Name == cmd || match.Command.Aliases.Contains(cmd))
+                if (match.Command.Name != cmd && !match.Command.Aliases.Contains(cmd)) continue;
+
+                var matched = match.Command;
+                var parameters = "";
+
+                if (matched.Parameters.Count > 0)
                 {
-                    var matched = match.Command;
-                    var parameters = "";
-
-                    if (matched.Parameters.Count > 0)
+                    parameters = "Parameters:\n";
+                    foreach (var item in matched.Parameters)
                     {
-                        parameters = "Parameters:\n";
-                        foreach (var item in matched.Parameters)
-                        {
-                            parameters += $"\t{item.Name} - *{item.Summary}*\n";
-                        }
+                        parameters += $"\t{item.Name} - *{item.Summary}*\n";
                     }
-
-                    builder.AddField(x =>
-                    {
-                        x.Name = $"{matched.Aliases.First()}";
-                        x.Value = parameters +
-                                  $"Summary:\n" +
-                                  $"\t{matched.Summary}.\n\n\n";
-                        x.IsInline = false;
-                    });
                 }
+
+                builder.AddField(x =>
+                {
+                    x.Name = $"{matched.Aliases.First()}";
+                    x.Value = parameters +
+                              $"Summary:\n" +
+                              $"\t{matched.Summary}.\n\n\n";
+                    x.IsInline = false;
+                });
             }
 
-            await ReplyAsync("", false, builder.Build());
+            await ReplyAsync("", embed: builder.Build());
         }
     }
 }

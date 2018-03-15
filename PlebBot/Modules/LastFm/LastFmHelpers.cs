@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Discord;
 using IF.Lastfm.Core.Api.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using PlebBot.Data.Models;
-using PlebBot.Helpers;
+using PlebBot.Services;
 
 namespace PlebBot.Modules
 {
@@ -15,22 +13,23 @@ namespace PlebBot.Modules
     {
         private async Task SendYtLinkAsync(string username)
         {
-            var scrobble = await _client.User.GetRecentScrobbles(username, null, 1, 1);
+            var scrobble = await fmClient.User.GetRecentScrobbles(username, null, 1, 1);
             if (scrobble.TotalItems > 0)
             {
                 var track = scrobble.Content[0];
                 var ytService = new YtService();
-                var response = await ytService.LinkVideoAsync(Context, $"{track.ArtistName} {track.Name}");
+                var response = await ytService.GetVideoLinkAsync(Context, $"{track.ArtistName} {track.Name}");
 
-                if (response != null) Cache.Add(Context.Message.Id, response.Id);
+                if (response != null) await ReplyAsync(response);
+                else await this.Error("No matching videos found.");
                 return;
             }
-            await Response.Error(Context, "You haven't scrobbled any tracks.");
+            await this.Error("You haven't scrobbled any tracks.");
         }
 
         private async Task GetTopAlbumsAsync(string username, LastStatsTimeSpan span, int limit)
         {
-            var albums = await _client.User.GetTopAlbums(username, span, 1, limit);
+            var albums = await fmClient.User.GetTopAlbums(username, span, 1, limit);
             if (albums.TotalItems > 0)
             {
                 var list = "";
@@ -46,12 +45,12 @@ namespace PlebBot.Modules
                 await BuildTopAsync(list, username, "albums", span);
                 return;
             }
-            await Response.Error(Context, $"{username} hasn't scrobbled any albums.");
+            await this.Error($"{username} hasn't scrobbled any albums.");
         }
 
         private async Task GetTopArtistsAsync(string username, LastStatsTimeSpan span, int limit)
         {
-            var artists = await _client.User.GetTopArtists(username, span, 1, limit);
+            var artists = await fmClient.User.GetTopArtists(username, span, 1, limit);
             var list = "";
             var i = 1;
             foreach (var artist in artists)
@@ -95,12 +94,12 @@ namespace PlebBot.Modules
         {
             var url =
                 $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
-                $"&limit={limit}&api_key={_lastFmKey}&format=json";
+                $"&limit={limit}&api_key={lastFmKey}&format=json";
             var json = await this.httpClient.GetStringAsync(url);
             dynamic response = JsonConvert.DeserializeObject(json);
 
             var list = "";
-            for (int i = 0; i < limit; i++)
+            for (var i = 0; i < limit; i++)
             {
                 dynamic track = response.toptracks.track[i];
                 list += $"{i + 1}. {track.artist.name} - *{track.name}* " +
@@ -150,15 +149,14 @@ namespace PlebBot.Modules
             var response = new EmbedBuilder()
                 .WithTitle($"Top {chartType} for {username} - {span} {totalScrobbles}")
                 .WithDescription(list)
-                .WithColor(Color.Gold)
-                .Build();
-            await ReplyAsync("", false, response);
+                .WithColor(Color.Gold);
+            await ReplyAsync("", embed: response.Build());
         }
 
         //Checks if the last.fm user exists
         private async Task<bool> CheckIfUserExistsAsync(string username)
         {
-            var response = await _client.User.GetInfoAsync(username);
+            var response = await fmClient.User.GetInfoAsync(username);
             if (response.Success)
             {
                 if (response.Content.Id != "")
@@ -167,7 +165,7 @@ namespace PlebBot.Modules
                         return true;
                 }
             }
-            await Response.Error(Context, LastFmError.NotFound);
+            await this.Error(LastFmError.NotFound);
             return false;
         }
 
@@ -176,13 +174,13 @@ namespace PlebBot.Modules
         {
             try
             {
-                var response = await _client.User.GetRecentScrobbles(username, null, 1, 2);
+                var response = await fmClient.User.GetRecentScrobbles(username, null, 1, 2);
                 if (response.Any())
                 {
                     var tracks = response.Content;
 
-                    string currAlbum = tracks[0].AlbumName ?? "";
-                    string prevAlbum = tracks[1].AlbumName ?? "";
+                    var currAlbum = tracks[0].AlbumName ?? "";
+                    var prevAlbum = tracks[1].AlbumName ?? "";
 
                     var images = tracks[0].Images;
                     var albumArt = "";
@@ -200,25 +198,15 @@ namespace PlebBot.Modules
                         .AddField("**Previous:**", prevField)
                         .WithColor(Color.DarkBlue);
 
-                    await ReplyAsync("", false, msg.Build());
+                    await ReplyAsync("", embed: msg.Build());
                     return;
                 }
-                await Response.Error(Context, "You haven't scrobbled any tracks.");
+                await this.Error("You haven't scrobbled any tracks.");
             }
             catch (Exception ex)
             {
-                await Response.Error(Context, ex.Message);
+                await this.Error(ex.Message);
             }
-        }
-
-        //find a user in the database
-        private async Task<User> DbFindUserAsync()
-        {
-            var id = Context.User.Id;
-            var condition = $"\"DiscordId\" = {id}";
-            var user = await userRepo.FindFirst(condition);
-
-            return user;
         }
 
         private async Task<string> TotalScrobblesAsync(LastStatsTimeSpan span, string username)
@@ -244,7 +232,7 @@ namespace PlebBot.Modules
                     offset = DateTimeOffset.UtcNow.AddDays(-365).ToUnixTimeSeconds();
                     break;
                 default:
-                    var user = await _client.User.GetInfoAsync(username);
+                    var user = await fmClient.User.GetInfoAsync(username);
                     scrobbles = user.Content.Playcount;
                     break;
             }
@@ -252,7 +240,7 @@ namespace PlebBot.Modules
             if (offset != 0)
             {
                 var url = $"http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
-                          $"{username}&from={offset}to={now}&api_key={_lastFmKey}" +
+                          $"{username}&from={offset}to={now}&api_key={lastFmKey}" +
                           $"&page=1&limit=200&format=json";
 
                 var json = await this.httpClient.GetStringAsync(url);

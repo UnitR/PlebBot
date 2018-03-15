@@ -7,14 +7,13 @@ using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Helpers;
 
 namespace PlebBot.Modules
 {
     [Group("Roles")]
     [Alias("role")]
     [Summary("Manage server roles")]
-    public class Roles : ModuleBase<SocketCommandContext>
+    public class Roles : BaseModule
     {
         private readonly Repository<Role> roleRepo;
         private readonly Repository<Server> serverRepo;
@@ -44,11 +43,11 @@ namespace PlebBot.Modules
                 }
                 response.WithDescription(description);
 
-                await ReplyAsync("", false, response.Build());
+                await ReplyAsync("", embed: response.Build());
             }
             else
             {
-                await Response.Error(Context, "This server doesn't have any self-assignable roles.");
+                await this.Error("This server doesn't have any self-assignable roles.");
             }
         }
 
@@ -87,21 +86,21 @@ namespace PlebBot.Modules
                         }
 
                         await ((IGuildUser)Context.User).AddRoleAsync(assign);
-                        await Response.Success(Context, $"Good job! You managed to get the '{assign?.Name}' role!");
+                        await this.Success($"Good job! You managed to get the '{assign?.Name}' role!");
                     }
                     else
                     {
-                        await Response.Error(Context, "You already have this role assigned to you.");
+                        await this.Error("You already have this role assigned to you.");
                     }
                 }
                 else
                 {
-                    await Response.Error(Context, $"There isn't a self-assignable role called '{role}'.");
+                    await this.Error($"There isn't a self-assignable role called '{role}'.");
                 }
             }
             else
             {
-                await Response.Error(Context, "There are no self-assignable roles for the server.");
+                await this.Error("There are no self-assignable roles for the server.");
             }
         }
 
@@ -114,7 +113,7 @@ namespace PlebBot.Modules
 
             if (roleResult == null)
             {
-                await Response.Error(Context, $"No role with the name {role} was found.");
+                await this.Error($"No role with the name {role} was found.");
                 return;
             }
 
@@ -131,11 +130,11 @@ namespace PlebBot.Modules
                 {
                     var guildRole = Context.Guild.Roles.FirstOrDefault(x => x.Id == r);
                     await user.RemoveRoleAsync(guildRole);
-                    await Response.Success(Context, $"Removed '{roleResult.Name}' from your roles.");
+                    await this.Success($"Removed '{roleResult.Name}' from your roles.");
                 });
                 return;
             }
-            await Response.Error(Context, $"You don't have '{roleResult.Name}' assigned to you.");
+            await this.Error($"You don't have '{roleResult.Name}' assigned to you.");
         }
 
 
@@ -168,17 +167,16 @@ namespace PlebBot.Modules
                     object[] values = { serverId, roleFind.Id, roleFind.Name, isColour };
                     await roleRepo.Add(columns, values);
 
-                    await Response.Success(Context,
-                        $"Added '{roleFind.Name}' to the list of self-assignable roles.");
+                    await this.Success($"Added '{roleFind.Name}' to the list of self-assignable roles.");
                 }
                 else
                 {
-                    await Response.Error(Context, $"The '{roleFind.Name}' role is already set as self-assignable.");
+                    await this.Error($"The '{roleFind.Name}' role is already set as self-assignable.");
                 }
             }
             else
             {
-                await Response.Error(Context, $"No role with the name '{role}' was found in the server.");
+                await this.Error($"No role with the name '{role}' was found in the server.");
             }
 
         }
@@ -195,15 +193,12 @@ namespace PlebBot.Modules
                 var delCondition = $"\"Id\" = {roleToRemove.Id}";
                 await roleRepo.DeleteFirst(delCondition);
 
-                await Response.Success(Context, $"The '{roleToRemove.Name}' role has been successfully " +
-                                                $"removed from the self-assignable list.");
-            }
-            else
-            {
-                await Response.Error(Context,
-                    $"No role with the name '{role}' has been found in the self-assignable list");
+                await this.Success($"The '{roleToRemove.Name}' role has been successfully " +
+                                   $"removed from the self-assignable list.");
+                return;
             }
 
+            await this.Error($"No role with the name '{role}' has been found in the self-assignable list");
         }
 
         private async Task<List<Role>> GetServerRolesAsync()

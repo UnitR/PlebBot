@@ -6,23 +6,21 @@ using IF.Lastfm.Core.Api;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
 
 namespace PlebBot.Modules
 {
-    public partial class LastFm : CommandCacheModuleBase<SocketCommandContext>
+    public partial class LastFm : BaseModule
     {
-        private readonly LastfmClient _client;
-        private readonly string _lastFmKey;
+        private readonly LastfmClient fmClient;
+        private readonly string lastFmKey;
         private readonly Repository<User> userRepo;
         private readonly HttpClient httpClient;
 
         public LastFm(Repository<User> repo, HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
-            this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
-            this._lastFmKey = config["tokens:lastfm_key"];
+            this.fmClient = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
+            this.lastFmKey = config["tokens:lastfm_key"];
             this.userRepo = repo;
             this.httpClient = client;
         }
@@ -40,14 +38,14 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     await NowPlayingAsync(user.LastFm);
                 }
                 else
                 {
-                    await Response.Error(Context, LastFmError.NotLinked);
+                    await this.Error(LastFmError.NotLinked);
                 }
             }
         }
@@ -72,7 +70,7 @@ namespace PlebBot.Modules
                             var updateCondition = $"\"Id\" = {user.Id}";
                             await userRepo.UpdateFirst(column, value, updateCondition);
 
-                            await Response.Success(Context, "Succesfully updated your last.fm username.");
+                            await this.Success("Succesfully updated your last.fm username.");
                         }
                         else
                         {
@@ -80,21 +78,20 @@ namespace PlebBot.Modules
                             object[] values = {Context.User.Id, username};
                             await userRepo.Add(columns, values);
 
-                            await Response.Success(
-                                Context, "last.fm username saved. You can now freely use the `fm` commands.");
+                            await this.Success("last.fm username saved. You can now freely use the `fm` commands.");
                         }
                     }
                     catch (Exception ex)
                     {
-                        await Response.Error(
-                            Context, $"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
-                                     $"{ex.Message}");
+                        await this.Error(
+                            $"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
+                            $"{ex.Message}");
                     }
                 }
             }
             else
             {
-                await Response.Error(Context, "You must provide a username.");
+                await this.Error("You must provide a username.");
             }
         }
 
@@ -115,12 +112,12 @@ namespace PlebBot.Modules
                         await GetTopArtistsAsync(username, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                 }
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -129,10 +126,10 @@ namespace PlebBot.Modules
                         await GetTopArtistsAsync(user.LastFm, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
 
@@ -153,12 +150,12 @@ namespace PlebBot.Modules
                         await GetTopAlbumsAsync(username, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                 }
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -167,10 +164,10 @@ namespace PlebBot.Modules
                         await GetTopAlbumsAsync(user.LastFm, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
 
@@ -190,12 +187,12 @@ namespace PlebBot.Modules
                         await TopTracksAsync(span, username, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                 }
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -203,10 +200,10 @@ namespace PlebBot.Modules
                         await TopTracksAsync(span, user.LastFm, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
 
@@ -223,13 +220,13 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     await SendYtLinkAsync(user.LastFm);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
     }

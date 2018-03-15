@@ -7,20 +7,20 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using PlebBot.CommandCache;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
+using PlebBot.Services;
 
 namespace PlebBot
 {
     public partial class Program
     {
-        private CommandService _commands;
-        private DiscordSocketClient _client;
-        private IServiceProvider _provider;
-        private IServiceCollection _services;
-        private IConfigurationRoot _config;
+        private CommandService commands;
+        private DiscordSocketClient client;
+        private IServiceProvider provider;
+        private IServiceCollection services;
+        private IConfigurationRoot config;
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -30,18 +30,18 @@ namespace PlebBot
             var builder = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("_config.json");
-            _config = builder.Build();
+            config = builder.Build();
 
-            _services = new ServiceCollection();
-            _client = new DiscordSocketClient().UseCommandCache(_services, 200);
-            _provider = ConfigureServices(_services);
+            services = new ServiceCollection();
+            client = new DiscordSocketClient().UseCommandCache(services, 200);
+            provider = ConfigureServices(services);
 
-            _commands = new CommandService();
+            commands = new CommandService();
             await InstallAsync();
 
-            await _client.LoginAsync(TokenType.Bot, _config["tokens:discord_token"]);
-            await _client.SetGameAsync("top 40 hits");
-            await _client.StartAsync();
+            await client.LoginAsync(TokenType.Bot, config["tokens:discord_token"]);
+            await client.SetGameAsync("top 40 hits");
+            await client.StartAsync();
 
             // Block this task until the program is closed.
             await Task.Delay(-1);
@@ -55,28 +55,30 @@ namespace PlebBot
 
         public async Task InstallAsync()
         {
-            _client.Log += Log;
-            _client.JoinedGuild += HandleJoinGuildAsync;
-            _client.LeftGuild += HandleLeaveGuildAsync;
-            _client.MessageReceived += HandleCommandAsync;
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly());
+            client.Log += Log;
+            client.JoinedGuild += HandleJoinGuildAsync;
+            client.LeftGuild += HandleLeaveGuildAsync;
+            client.MessageReceived += HandleCommandAsync;
+            await commands.AddModulesAsync(Assembly.GetEntryAssembly());
         }
 
-        private IServiceProvider ConfigureServices(IServiceCollection services)
+        private IServiceProvider ConfigureServices(IServiceCollection serviceCollection)
         {
-            services.AddSingleton(_client);
-            services.AddSingleton(new CommandService(new CommandServiceConfig
+            serviceCollection.AddSingleton(client);
+            serviceCollection.AddSingleton(new CommandService(new CommandServiceConfig
             {
                 DefaultRunMode = RunMode.Async,
                 LogLevel = LogSeverity.Verbose
             })); 
-            services.AddSingleton<HttpClient>();
-            services.AddTransient<Repository<Server>>();
-            services.AddTransient<Repository<Role>>();
-            services.AddTransient<Repository<User>>();
-            services.AddSingleton(_config);
+            serviceCollection.AddSingleton<HttpClient>();
+            serviceCollection.AddTransient<Repository<Server>>();
+            serviceCollection.AddTransient<Repository<Role>>();
+            serviceCollection.AddTransient<Repository<User>>();
+            serviceCollection.AddSingleton(config);
+            serviceCollection.AddSingleton<WeatherService>();
+            serviceCollection.AddTransient<YtService>();
 
-            return services.BuildServiceProvider();
+            return serviceCollection.BuildServiceProvider();
         }
     }
 }

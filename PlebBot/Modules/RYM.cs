@@ -3,14 +3,12 @@ using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
 
 namespace PlebBot.Modules
 {
     [Group("rym")]
     [Alias("RYM", "rateyourmusic")]
-    public class RYM : CommandCacheModuleBase<SocketCommandContext>
+    public class RYM : BaseModule
     {
         private readonly Repository<User> userRepo;
 
@@ -25,7 +23,7 @@ namespace PlebBot.Modules
         {
             if (username != null)
             {
-                var user = await userRepo.FindFirst($"\"DiscordId\" = {Context.User.Id}");
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     await userRepo.UpdateFirst("Rym", username, $"\"Id\" = {user.Id}");
@@ -38,11 +36,11 @@ namespace PlebBot.Modules
                     await userRepo.Add(columns, values);
                 }
 
-                await Response.Success(Context, "Succesfully set your RYM username.");
+                await this.Success("Succesfully set your RYM username.");
                 return;
             }
 
-            await Response.Error(Context, "You haven't provided a username.");
+            await this.Error("You haven't provided a username.");
         }
 
         [Command]
@@ -55,7 +53,7 @@ namespace PlebBot.Modules
 
             if (user?.Rym == null)
             {
-                await Response.Error(Context, "You haven't linked your RYM account.");
+                await this.Error("You haven't linked your RYM account.");
                 return;
             }
 
@@ -65,7 +63,7 @@ namespace PlebBot.Modules
                 .WithDescription($"https://rateyourmusic.com/~{user.Rym}")
                 .WithColor(Color.DarkBlue);
 
-            await ReplyAsync("", false, response.Build());
+            await ReplyAsync("", embed: response.Build());
         }
     }
 }
