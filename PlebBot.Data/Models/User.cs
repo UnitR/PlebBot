@@ -4,8 +4,12 @@
     {
         public int Id { get; set; }
 
-        public string DiscordId { get; set; }
+        public long DiscordId { get; set; }
 
         public string LastFm { get; set; }
+
+        public string Rym { get; set; }
+
+        public string City { get; set; }
     }
 }

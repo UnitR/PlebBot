@@ -4,57 +4,76 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
+using PlebBot.Services;
 
 namespace PlebBot.Modules
 {
-    public class Miscellaneous : CommandCacheModuleBase<SocketCommandContext>
+    public class Miscellaneous : BaseModule
     {
         [Command("ping")]
-        [Summary("Ping!... Pong!")]
+        [Summary("Used for testing connection")]
         public async Task PingPong()
         {
             await ReplyAsync("...Pong!");
         }
 
-        [Command("bless")]
+        [Command("bless", RunMode = RunMode.Async)]
         [Summary("Blessed be the rains down in Africa")]
-        public async Task Bless([Summary("User to bless the rains with")] SocketUser user = null)
+        public async Task Bless([Summary("User to bless the rains with")] [Remainder] string username = "")
         {
-            if (user != null)
-            {
-                await ReplyAsync($"Bless you, {user.Mention} :pray:");
-            }
-            else
+            if (username == String.Empty)
             {
                 await ReplyAsync("Bless :pray:");
+                return;
             }
+
+            var mention = "";
+            username = username.ToLowerInvariant();
+
+            if (username == "pleb") mention = @"<@287097793514831873>";
+            else
+            {
+                foreach (var user in Context.Guild.Users)
+                {
+                    if (user.Username.ToLowerInvariant().Contains(username))
+                    {
+                        mention = user.Mention;
+                        break;
+                    }
+
+                    if (user.Nickname == null || !user.Nickname.ToLowerInvariant().Contains(username)) continue;
+
+                    mention = user.Mention;
+                    break;
+                }
+            }
+            await ReplyAsync($"Bless you, {mention} :pray:");
         }
 
         [Command("choose")]
         [Summary("Makes a decision for you")]
         public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choice_list)
         {
-            string[] options = choice_list.Split(',');
+            var options = choice_list.Split(',');
             options = options.Where((val, idx) => val.Trim() != "").ToArray();
-            if (options.Length > 1)
-            {
-                await PickRandom(options);
-            } else {
-                await Response.Error(Context, "You must provide a comma-separated list of options.");
-            }
+
+            if (options.Length > 1) await PickRandom(options);
+            else await this.Error("You must provide a comma-separated list of options.");
         }
 
-        [Command("yt")]
+        [Command("yt", RunMode = RunMode.Async)]
         [Summary("Link a YtService video")]
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {
             var yt = new YtService();
-            var response = await yt.LinkVideoAsync(Context, query);
+            var response = await yt.GetVideoLinkAsync(Context, query);
+            if (response != null)
+            {
+                await ReplyAsync(response);
+                return;
+            }
 
-            if(response != null) Cache.Add(Context.Message.Id, response.Id);
+            await this.Error("No videos found.");
         }
 
         //choose a random element from a list and send the result
@@ -66,7 +85,7 @@ namespace PlebBot.Modules
                 .WithDescription(options[select])
                 .WithColor(Color.DarkGreen);
 
-            await ReplyAsync("", false, response.Build());
+            await ReplyAsync("", embed: response.Build());
         }
     }
 }

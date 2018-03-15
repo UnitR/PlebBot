@@ -1,18 +1,17 @@
-﻿using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace PlebBot.Helpers.CommandCache
+namespace PlebBot.CommandCache
 {
     public static class CommandCacheExtensions
     {
-        public static DiscordSocketClient UseCommandCache(this DiscordSocketClient client, IServiceCollection services, int capacity, Func<LogMessage, Task> log)
+        public static DiscordSocketClient UseCommandCache(this DiscordSocketClient client, IServiceCollection services, int capacity)
         {
-            services.AddSingleton(new CommandCacheService(client, capacity, log));
+            services.AddSingleton(new CommandCacheService(client, capacity));
             return client;
         }
         public static async Task<IUserMessage> SendCachedMessageAsync(this IMessageChannel channel, CommandCacheService cache, ulong commandId, string text, bool prependZWSP = false)

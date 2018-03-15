@@ -1,28 +1,31 @@
 ﻿using System;
+using System.Net.Http;
 using System.Threading.Tasks;
-using Dapper;
 using Discord.Commands;
 using IF.Lastfm.Core.Api;
 using Microsoft.Extensions.Configuration;
-using PlebBot.Data;
-using PlebBot.Helpers;
-using PlebBot.Helpers.CommandCache;
+using PlebBot.Data.Models;
+using PlebBot.Data.Repositories;
 
 namespace PlebBot.Modules
 {
-    public partial class LastFm : CommandCacheModuleBase<SocketCommandContext>
+    public partial class LastFm : BaseModule
     {
-        private readonly LastfmClient _client;
-        private readonly string _lastFmKey;
+        private readonly LastfmClient fmClient;
+        private readonly string lastFmKey;
+        private readonly Repository<User> userRepo;
+        private readonly HttpClient httpClient;
 
-        public LastFm()
+        public LastFm(Repository<User> repo, HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
-            this._client = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
-            this._lastFmKey = config["tokens:lastfm_key"];
+            this.fmClient = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
+            this.lastFmKey = config["tokens:lastfm_key"];
+            this.userRepo = repo;
+            this.httpClient = client;
         }
 
-        [Command("fm")]
+        [Command("fm", RunMode = RunMode.Async)]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
         {
@@ -35,19 +38,19 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     await NowPlayingAsync(user.LastFm);
                 }
                 else
                 {
-                    await Response.Error(Context, LastFmError.NotLinked);
+                    await this.Error(LastFmError.NotLinked);
                 }
             }
         }
 
-        [Command("fm set")]
+        [Command("fm set", RunMode = RunMode.Async)]
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
         {
@@ -57,49 +60,42 @@ namespace PlebBot.Modules
                 {
                     try
                     {
-                        using (var conn = BotContext.OpenConnection())
+                        var findCondition = $"\"DiscordId\" = {Context.User.Id}";
+                        var user = await userRepo.FindFirst(findCondition);
+
+                        if (user != null)
                         {
-                            var userId = 
-                                await conn.QueryFirstOrDefaultAsync<int>(
-                                "select \"Id\" from public.\"Users\" where \"DiscordId\" = @DiscordId",
-                                new {DiscordId = Context.User.Id.ToString()});
+                            var column = "LastFm";
+                            var value = username;
+                            var updateCondition = $"\"Id\" = {user.Id}";
+                            await userRepo.UpdateFirst(column, value, updateCondition);
 
-                            if (userId != 0)
-                            {
-                                await conn.ExecuteAsync(
-                                    "update public.\"Users\" set \"LastFm\" = @lastFm where \"Id\" = @id",
-                                    new {lastFm = username, id = userId});
+                            await this.Success("Succesfully updated your last.fm username.");
+                        }
+                        else
+                        {
+                            string[] columns = {"DiscordId", "LastFm"};
+                            object[] values = {Context.User.Id, username};
+                            await userRepo.Add(columns, values);
 
-                                await Response.Success(Context, "Succesfully updated your last.fm username.");
-                            }
-                            else
-                            {
-                                var discord = Context.User.Id.ToString();
-                                await conn.ExecuteAsync(
-                                    "insert into public.\"Users\" (\"DiscordId\", \"LastFm\") " +
-                                    "values (@discordId, @lastFm)",
-                                    new {discordId = discord, lastFm = username});
-
-                                await Response.Success(
-                                    Context, "last.fm username saved. You can now freely use the `fm` commands.");
-                            }
+                            await this.Success("last.fm username saved. You can now freely use the `fm` commands.");
                         }
                     }
                     catch (Exception ex)
                     {
-                        await Response.Error(
-                            Context,$"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
-                                    $"{ex.Message}");
+                        await this.Error(
+                            $"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
+                            $"{ex.Message}");
                     }
                 }
             }
             else
             {
-                await Response.Error(Context, "You must provide a username.");
+                await this.Error("You must provide a username.");
             }
         }
 
-        [Command("fm top artists")]
+        [Command("fm top artists", RunMode = RunMode.Async)]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -116,12 +112,12 @@ namespace PlebBot.Modules
                         await GetTopArtistsAsync(username, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                 }
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -130,14 +126,14 @@ namespace PlebBot.Modules
                         await GetTopArtistsAsync(user.LastFm, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
 
-        [Command("fm top albums")]
+        [Command("fm top albums", RunMode = RunMode.Async)]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -154,12 +150,12 @@ namespace PlebBot.Modules
                         await GetTopAlbumsAsync(username, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                 }
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -168,14 +164,14 @@ namespace PlebBot.Modules
                         await GetTopAlbumsAsync(user.LastFm, timeSpan, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
 
-        [Command("fm top tracks")]
+        [Command("fm top tracks", RunMode = RunMode.Async)]
         [Summary("Get the top tracks for a user")]
         public async Task TopTracks(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
@@ -191,12 +187,12 @@ namespace PlebBot.Modules
                         await TopTracksAsync(span, username, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                 }
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -204,14 +200,14 @@ namespace PlebBot.Modules
                         await TopTracksAsync(span, user.LastFm, lim);
                         return;
                     }
-                    await Response.Error(Context, LastFmError.Limit);
+                    await this.Error(LastFmError.Limit);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
 
-        [Command("fmyt")]
+        [Command("fmyt", RunMode = RunMode.Async)]
         [Summary("Send a YtService link to your current scrobble")]
         public async Task YtLink([Summary("Your last.fm username")] string username = "")
         {
@@ -224,13 +220,13 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await DbFindUserAsync();
+                var user = await this.FindUserAsync(this.Context);
                 if (user != null)
                 {
                     await SendYtLinkAsync(user.LastFm);
                     return;
                 }
-                await Response.Error(Context, LastFmError.NotLinked);
+                await this.Error(LastFmError.NotLinked);
             }
         }
     }

@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using Discord;
 
-namespace PlebBot.Helpers
+namespace PlebBot.MessageCache
 {
     // Based on https://github.com/RogueException/Discord.Net/blob/dev/src/Discord.Net.WebSocket/Entities/Messages/MessageCache.cs
     // Also based on https://github.com/moiph/ub3r-b0t/blob/master/src/MessageCache.cs
