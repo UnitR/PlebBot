@@ -164,7 +164,7 @@ namespace PlebBot.Modules
                     var isColour = colour == "-c";
 
                     string[] columns = { "ServerId", "DiscordId", "Name", "IsColour" };
-                    object[] values = { serverId, roleFind.Id, roleFind.Name, isColour };
+                    object[] values = { serverId, (long) roleFind.Id, roleFind.Name, isColour };
                     await roleRepo.Add(columns, values);
 
                     await this.Success($"Added '{roleFind.Name}' to the list of self-assignable roles.");
