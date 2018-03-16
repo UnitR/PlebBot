@@ -112,8 +112,8 @@ namespace PlebBot.Services.Weather
                 embed.AddField(
                     $"{day.date.weekday} ({day.date.monthname} {day.date.day})",
                     $"Conditions: {day.conditions} | " +
-                    $"High: {day.high.celcius}°C ({day.high.fahrenheit}°F) | " +
-                    $"Low: {day.low.celcius} ({day.low.fahrenheit}°F) | " +
+                    $"High: {day.high.celsius}°C ({day.high.fahrenheit}°F) | " +
+                    $"Low: {day.low.celsius}°C ({day.low.fahrenheit}°F) | " +
                     $"Wind: {windDir} at {day.avewind.kph} km/h ({day.avewind.mph} mph) | " +
                     $"Humidty: {day.avehumidity}%");
 
