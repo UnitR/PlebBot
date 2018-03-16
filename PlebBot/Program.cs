@@ -11,6 +11,7 @@ using PlebBot.CommandCache;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 using PlebBot.Services;
+using PlebBot.Services.Weather;
 
 namespace PlebBot
 {

@@ -5,7 +5,7 @@ using PlebBot.CommandCache;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 
-namespace PlebBot
+namespace PlebBot.Modules
 {
     public class BaseModule : CommandCacheModuleBase<SocketCommandContext>
     {
@@ -27,10 +27,10 @@ namespace PlebBot
             await ReplyAsync("", embed: response.Build());
         }
 
-        protected async Task<User> FindUserAsync(ICommandContext context)
+        protected async Task<User> FindUserAsync()
         {
             var repo = new Repository<User>();
-            var id = context.User.Id;
+            var id = Context.User.Id;
             var condition = $"\"DiscordId\" = {id}";
             var user = await repo.FindFirst(condition);
 
