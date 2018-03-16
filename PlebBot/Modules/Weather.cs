@@ -1,6 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
+using Microsoft.CSharp.RuntimeBinder;
 using PlebBot.Services;
+using PlebBot.Services.Weather;
 
 namespace PlebBot.Modules
 {
@@ -13,23 +17,74 @@ namespace PlebBot.Modules
             this.service = service;
         }
 
-        [Command("weather")]
+        [Command("weather", RunMode = RunMode.Async)]
         [Alias("w")]
         [Summary("Check current weather conditions")]
         public async Task DisplayWeater(
-            [Summary("The city you wish to check the current weather for")] [Remainder] string city = "")
-            => await this.HandleRequestAsync(city);
+            [Summary("The city you wish to check the current weather for")] [Remainder] string location = "")
+            => await this.HandleRequestAsync(location);
 
         [Command("weather set", RunMode = RunMode.Async)]
         [Alias("wset")]
         [Summary("Link a city to your profile")]
-        public async Task SetLocation([Summary("The city you wish to link to your profile")] [Remainder] string city)
-            => await this.HandleRequestAsync(city);
+        public async Task SetLocation(
+            [Summary("The city you want to link to your profile")] [Remainder] string location)
+            => await this.HandleRequestAsync(location);
 
-
-        private async Task HandleRequestAsync(string city)
+        [Command("forecast", RunMode = RunMode.Async)]
+        [Alias("fc")]
+        [Summary("Get the weather forecast for 3 days")]
+        public async Task GetForecast(
+            [Summary("The location you want to check the forecast for")] [Remainder] string location = "")
         {
-            var embed = await service.Weather(city, (long) Context.User.Id);
+            EmbedBuilder embed;
+            if (location == String.Empty)
+            {
+                var user = await this.FindUserAsync();
+                if (user.City == null)
+                {
+                    embed = WeatherResponse.NotLinkedError();
+                    await ReplyAsync("", embed: embed.Build());
+                    return;
+                }
+                location = user.City;
+
+                try
+                {
+                    embed = await service.Forecast(location);
+                }
+                catch (RuntimeBinderException)
+                {
+                    embed = WeatherResponse.NoInformation();
+                }
+
+                await ReplyAsync("", embed: embed);
+                return;
+            }
+
+            embed = await service.Forecast(location);
+            await ReplyAsync("", embed: embed.Build());
+        }
+
+        //Handle the difference between "weather set" and "weather" due to a Discord.Net limitation
+        private async Task HandleRequestAsync(string location)
+        {
+            EmbedBuilder embed;
+
+            if (location.Contains("set "))
+            {
+                embed = await service.SaveLocation(location, (long) Context.User.Id);
+                await ReplyAsync("", embed: embed.Build());
+                return;
+            }
+
+            if (location == String.Empty)
+            {
+                var user = await this.FindUserAsync();
+                location = user.City;
+            }
+
+            embed = await service.CurrentWeather(location);
             await ReplyAsync("", embed: embed.Build());
         }
     }

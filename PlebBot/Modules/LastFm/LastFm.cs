@@ -38,7 +38,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await this.FindUserAsync(this.Context);
+                var user = await this.FindUserAsync();
                 if (user != null)
                 {
                     await NowPlayingAsync(user.LastFm);
@@ -117,7 +117,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await this.FindUserAsync(this.Context);
+                var user = await this.FindUserAsync();
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -155,7 +155,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await this.FindUserAsync(this.Context);
+                var user = await this.FindUserAsync();
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -192,7 +192,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await this.FindUserAsync(this.Context);
+                var user = await this.FindUserAsync();
                 if (user != null)
                 {
                     if (int.TryParse(limit, out int lim) && lim <= 25 && lim >= 1)
@@ -220,7 +220,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                var user = await this.FindUserAsync(this.Context);
+                var user = await this.FindUserAsync();
                 if (user != null)
                 {
                     await SendYtLinkAsync(user.LastFm);

@@ -23,7 +23,7 @@ namespace PlebBot.Modules
         {
             if (username != null)
             {
-                var user = await this.FindUserAsync(this.Context);
+                var user = await this.FindUserAsync();
                 if (user != null)
                 {
                     await userRepo.UpdateFirst("Rym", username, $"\"Id\" = {user.Id}");
@@ -47,7 +47,7 @@ namespace PlebBot.Modules
         [Summary("Send a link to your Rate Your Music profile")]
         public async Task LinkProfile()
         {
-            var userId = Context.User.Id;
+            var userId = (long) Context.User.Id;
             var condition = $"\"DiscordId\" = {userId}";
             var user = await userRepo.FindFirst(condition);
 
