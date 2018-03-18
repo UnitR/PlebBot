@@ -48,8 +48,9 @@ namespace PlebBot.Modules
                     break;
                 }
             }
+
             if (mention != String.Empty) await ReplyAsync($"Bless you, {mention} :pray:");
-            else await ReplyAsync("Bless :pray:");
+            else if (username != String.Empty) await ReplyAsync($"Bless you, {username} :pray:");
         }
 
         [Priority(1)]

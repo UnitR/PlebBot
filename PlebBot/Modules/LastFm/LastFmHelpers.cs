@@ -71,6 +71,7 @@ namespace PlebBot.Modules
                     timeSpan = "7day";
                     break;
                 case "month":
+                case "1month":
                     timeSpan = "1month";
                     break;
                 case "3months":
