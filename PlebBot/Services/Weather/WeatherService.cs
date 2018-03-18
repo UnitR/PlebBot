@@ -65,7 +65,7 @@ namespace PlebBot.Services.Weather
 
             address =
                 address.Replace(
-                    address.Substring(address.LastIndexOf("/q/")),
+                    address.Substring(address.LastIndexOf("/q/", StringComparison.InvariantCulture)),
                     $"{response.response.results.First.l.ToString()}.json");
 
             response = await GetWeatherData(address);
@@ -95,6 +95,7 @@ namespace PlebBot.Services.Weather
                 "Weather Condition:",
                 $"{observation.weather} | Feels like " +
                 $"{observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
+                $"Actual: {observation.temp_c}°C ({observation.temp_f}°F)\n" +
                 $"High: {forecast.high.celsius}°C ({forecast.high.fahrenheit}°F) | " +
                 $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)");
             embed.AddInlineField("Wind:", windText);
