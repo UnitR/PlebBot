@@ -112,6 +112,7 @@ namespace PlebBot.Services.Weather
             var embed = new EmbedBuilder();
             embed.WithTitle(
                 $"Weather forecast for {forecast.current_observation.display_location.full}");
+            embed.WithUrl(forecast.current_observation.forecast_url.ToString());
             embed.WithColor(237, 126, 0);
 
             var fct = forecast.forecast.simpleforecast.forecastday;
