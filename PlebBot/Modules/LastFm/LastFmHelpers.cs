@@ -11,6 +11,74 @@ namespace PlebBot.Modules
 {
     public partial class LastFm
     {
+        private async Task HandleCommand(Func<string, Task> func, string username = "")
+        {
+            if (username != String.Empty)
+            {
+                if (!await CheckIfUserExistsAsync(username))
+                {
+                    await Error(NotFound);
+                    return;
+                }
+                await func.Invoke(username);
+            }
+            else
+            {
+                var user = await FindUserAsync();
+                if (user.LastFm != null)
+                {
+                    await HandleCommand(func, user.LastFm);
+                    return;
+                }
+                await Error(NotLinked);
+            }
+        }
+        
+        private async Task SendChartAsync(ChartType chart, int limit, string span = "", string username = "")
+        {
+            if (username != String.Empty)
+            {
+                if (!await CheckIfUserExistsAsync(username))
+                {
+                    await Error(NotFound);
+                    return;
+                }
+            }
+            else
+            {
+                var user = await FindUserAsync();
+                if (user == null)
+                {
+                    await Error(NotLinked);
+                    return;
+                }
+                username = user.LastFm;
+            }
+
+            if (limit < 1 || limit > 25)
+            {
+                await Error("Check the given limit and try again. Must be between a number between 1 and 25.");
+                return;
+            }
+
+            var chartSpan = await DetermineSpan(span);
+            switch (chart)
+            {
+                case ChartType.Artists:
+                    await GetTopArtistsAsync(username, chartSpan, limit);
+                    break;
+                case ChartType.Albums:
+                    await GetTopAlbumsAsync(username, chartSpan, limit);
+                    break;
+                case ChartType.Tracks:
+                    await TopTracksAsync(span, username, limit);
+                    break;
+                default:
+                    await Error("<@164102776035475458> has fucked up again 🙄");
+                    break;
+            }
+        }
+
         private async Task SendYtLinkAsync(string username)
         {
             var scrobble = await fmClient.User.GetRecentScrobbles(username, null, 1, 1);
@@ -21,10 +89,10 @@ namespace PlebBot.Modules
                 var response = await ytService.GetVideoLinkAsync(Context, $"{track.ArtistName} {track.Name}");
 
                 if (response != null) await ReplyAsync(response);
-                else await this.Error("No matching videos found.");
+                else await Error("No matching videos found.");
                 return;
             }
-            await this.Error("You haven't scrobbled any tracks.");
+            await Error("You haven't scrobbled any tracks.");
         }
 
         private async Task GetTopAlbumsAsync(string username, LastStatsTimeSpan span, int limit)
@@ -45,7 +113,7 @@ namespace PlebBot.Modules
                 await BuildTopAsync(list, username, "albums", span);
                 return;
             }
-            await this.Error($"{username} hasn't scrobbled any albums.");
+            await Error($"{username} hasn't scrobbled any albums.");
         }
 
         private async Task GetTopArtistsAsync(string username, LastStatsTimeSpan span, int limit)
@@ -96,7 +164,7 @@ namespace PlebBot.Modules
             var url =
                 $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
                 $"&limit={limit}&api_key={lastFmKey}&format=json";
-            var json = await this.httpClient.GetStringAsync(url);
+            var json = await httpClient.GetStringAsync(url);
             dynamic response = JsonConvert.DeserializeObject(json);
 
             var list = "";
@@ -110,9 +178,9 @@ namespace PlebBot.Modules
         }
 
         //determines the time span used for the chart
-        private Task<LastStatsTimeSpan> DetermineSpan(string span)
+        private static Task<LastStatsTimeSpan> DetermineSpan(string span)
         {
-            LastStatsTimeSpan timeSpan = LastStatsTimeSpan.Overall;
+            LastStatsTimeSpan timeSpan;
             switch (span.ToLower())
             {
                 case "week":
@@ -138,6 +206,9 @@ namespace PlebBot.Modules
                 case "year":
                     timeSpan = LastStatsTimeSpan.Year;
                     break;
+                default:
+                    timeSpan = LastStatsTimeSpan.Overall;
+                    break;
             }
 
             return Task.FromResult(timeSpan);
@@ -158,56 +229,43 @@ namespace PlebBot.Modules
         private async Task<bool> CheckIfUserExistsAsync(string username)
         {
             var response = await fmClient.User.GetInfoAsync(username);
-            if (response.Success)
-            {
-                if (response.Content.Id != "")
-                {
-                    if (response.Content.Playcount >= 0)
-                        return true;
-                }
-            }
-            await this.Error(LastFmError.NotFound);
+            if (!response.Success) return false;
+            if (response.Content.Id == "") return false;
+            if (response.Content.Playcount >= 0) return true;
             return false;
         }
 
         //show user's scrobbles
         private async Task NowPlayingAsync(string username)
         {
-            try
+            var response = await fmClient.User.GetRecentScrobbles(username, null, 1, 2);
+            if (response.Any())
             {
-                var response = await fmClient.User.GetRecentScrobbles(username, null, 1, 2);
-                if (response.Any())
-                {
-                    var tracks = response.Content;
+                var tracks = response.Content;
 
-                    var currAlbum = tracks[0].AlbumName ?? "";
-                    var prevAlbum = tracks[1].AlbumName ?? "";
+                var currAlbum = tracks[0].AlbumName ?? "";
+                var prevAlbum = tracks[1].AlbumName ?? "";
 
-                    var images = tracks[0].Images;
-                    var albumArt = "";
-                    if (images != null) albumArt = images.LastOrDefault(img => img != null)?.ToString();
+                var images = tracks[0].Images;
+                var albumArt = "";
+                if (images != null) albumArt = images.LastOrDefault(img => img != null)?.ToString();
 
-                    var msg = new EmbedBuilder();
-                    var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
-                    var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
-                    if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
-                    if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
-                    msg.WithTitle($"Recent tracks for {username}")
-                        .WithThumbnailUrl(albumArt)
-                        .WithUrl($"https://www.last.fm/user/{username}")
-                        .AddField("**Current:**", currField)
-                        .AddField("**Previous:**", prevField)
-                        .WithColor(Color.DarkBlue);
+                var msg = new EmbedBuilder();
+                var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
+                var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
+                if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
+                if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
+                msg.WithTitle($"Recent tracks for {username}")
+                    .WithThumbnailUrl(albumArt)
+                    .WithUrl($"https://www.last.fm/user/{username}")
+                    .AddField("**Current:**", currField)
+                    .AddField("**Previous:**", prevField)
+                    .WithColor(Color.DarkBlue);
 
-                    await ReplyAsync("", embed: msg.Build());
-                    return;
-                }
-                await this.Error("You haven't scrobbled any tracks.");
+                await ReplyAsync("", embed: msg.Build());
+                return;
             }
-            catch (Exception ex)
-            {
-                await this.Error(ex.Message);
-            }
+            await Error("You haven't scrobbled any tracks.");
         }
 
         private async Task<string> TotalScrobblesAsync(LastStatsTimeSpan span, string username)
@@ -244,7 +302,7 @@ namespace PlebBot.Modules
                           $"{username}&from={offset}to={now}&api_key={lastFmKey}" +
                           $"&page=1&limit=200&format=json";
 
-                var json = await this.httpClient.GetStringAsync(url);
+                var json = await httpClient.GetStringAsync(url);
                 dynamic response = (JObject) JsonConvert.DeserializeObject(json);
 
                 scrobbles = response.recenttracks["@attr"].total;
