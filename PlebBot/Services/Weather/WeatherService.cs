@@ -95,8 +95,8 @@ namespace PlebBot.Services.Weather
                 "Weather Condition:",
                 $"{observation.weather} | Feels like " +
                 $"{observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
-                $"High: {forecast.high.celcius}°C ({forecast.high.fahrenheit}°F) | " +
-                $"Low: {forecast.low.celcius}°C ({forecast.low.fahrenheit}°F)");
+                $"High: {forecast.high.celsius}°C ({forecast.high.fahrenheit}°F) | " +
+                $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)");
             embed.AddInlineField("Wind:", windText);
             embed.AddInlineField("Humidity:", $"{observation.relative_humidity}");
             embed.WithColor(237, 126, 0);
