@@ -58,34 +58,23 @@ namespace PlebBot.Modules
             {
                 if (await CheckIfUserExistsAsync(username))
                 {
-                    try
+                    var findCondition = $"\"DiscordId\" = {Context.User.Id}";
+                    var user = await userRepo.FindFirst(findCondition);
+
+                    if (user != null)
                     {
-                        var findCondition = $"\"DiscordId\" = {Context.User.Id}";
-                        var user = await userRepo.FindFirst(findCondition);
+                        var updateCondition = $"\"Id\" = {user.Id}";
+                        await userRepo.UpdateFirst("LastFm", username, updateCondition);
 
-                        if (user != null)
-                        {
-                            var column = "LastFm";
-                            var value = username;
-                            var updateCondition = $"\"Id\" = {user.Id}";
-                            await userRepo.UpdateFirst(column, value, updateCondition);
-
-                            await this.Success("Succesfully updated your last.fm username.");
-                        }
-                        else
-                        {
-                            string[] columns = {"DiscordId", "LastFm"};
-                            object[] values = {(long) Context.User.Id, username};
-                            await userRepo.Add(columns, values);
-
-                            await this.Success("last.fm username saved. You can now freely use the `fm` commands.");
-                        }
+                        await this.Success("Succesfully updated your last.fm username.");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        await this.Error(
-                            $"Something has gone terribly wrong. Get on it <@164102776035475458>\n\n" +
-                            $"{ex.Message}");
+                        string[] columns = {"DiscordId", "LastFm"};
+                        object[] values = {(long) Context.User.Id, username};
+                        await userRepo.Add(columns, values);
+
+                        await this.Success("last.fm username saved. You can now freely use the `fm` commands.");
                     }
                 }
             }
