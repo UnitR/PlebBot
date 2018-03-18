@@ -37,7 +37,7 @@ namespace PlebBot.Services.Weather
 
             try
             {
-                var address = $"{this.apiAddress}/conditions/q/{location}.json";
+                var address = $"{this.apiAddress}/conditions/forecast/q/{location}.json";
                 embed = await BuildCurrentWeatherEmbed(address);
             }
             catch (RuntimeBinderException)
@@ -61,6 +61,14 @@ namespace PlebBot.Services.Weather
             var json = await httpClient.GetStringAsync(address);
             dynamic response = JsonConvert.DeserializeObject(json);
 
+            if (response.response.results == null) return response;
+
+            address =
+                address.Replace(
+                    address.Substring(address.LastIndexOf("/q/")),
+                    $"{response.response.results.First.l.ToString()}.json");
+
+            response = await GetWeatherData(address);
             return response;
         }
 
@@ -68,13 +76,16 @@ namespace PlebBot.Services.Weather
         {
             var response = await GetWeatherData(address);
             var observation = response.current_observation;
+            var forecast = response.forecast.simpleforecast.forecastday.First;
 
             var kmh = (observation.wind_kph != 0) ? $"{observation.wind_kph} km/h" : "";
             var mph = (observation.wind_mph != 0) ? $"({observation.wind_mph} mph)" : "";
 
             string windDir = observation.wind_dir.ToString().ToLowerInvariant();
             windDir = await DetermineWind(windDir);
-            var windText = (windDir != String.Empty) ? $"Moving {windDir} at {kmh} {mph}" : "No wind";
+            var windText = 
+                (windDir != String.Empty && (kmh != String.Empty || mph != String.Empty)) ? 
+                $"Moving {windDir} at {kmh} {mph}" : "Calm";
 
             var embed = new EmbedBuilder();
             embed.WithTitle($"Current weather in {observation.display_location.full}");
@@ -83,7 +94,9 @@ namespace PlebBot.Services.Weather
             embed.AddInlineField(
                 "Weather Condition:",
                 $"{observation.weather} | Feels like " +
-                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F)");
+                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
+                $"High: {forecast.high.celcius}°C ({forecast.high.fahrenheit}°F) | " +
+                $"Low: {forecast.low.celcius}°C ({forecast.low.fahrenheit}°F)");
             embed.AddInlineField("Wind:", windText);
             embed.AddInlineField("Humidity:", $"{observation.relative_humidity}");
             embed.WithColor(237, 126, 0);
