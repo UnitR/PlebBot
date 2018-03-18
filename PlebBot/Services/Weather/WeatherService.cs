@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
@@ -51,7 +50,7 @@ namespace PlebBot.Services.Weather
         public async Task<EmbedBuilder> Forecast(string location)
         {
             var call = $"{apiAddress}/conditions/forecast/q/{location}.json";
-            var embed = await BuildForecastEmbed(call, location);
+            var embed = await BuildForecastEmbed(call);
 
             return embed;
         }
@@ -105,7 +104,7 @@ namespace PlebBot.Services.Weather
             return embed;
         }
 
-        private async Task<EmbedBuilder> BuildForecastEmbed(string address, string location)
+        private async Task<EmbedBuilder> BuildForecastEmbed(string address)
         {
             var forecast = await GetWeatherData(address);
 
@@ -139,7 +138,7 @@ namespace PlebBot.Services.Weather
             return embed;
         }
 
-        private Task<string> DetermineWind(string windDir)
+        private static Task<string> DetermineWind(string windDir)
         {
             Enum.TryParse(windDir, out Directions dir);
             switch (dir)
