@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using PlebBot.Services;
 
 namespace PlebBot.Modules
@@ -47,7 +48,17 @@ namespace PlebBot.Modules
                     break;
                 }
             }
-            await ReplyAsync($"Bless you, {mention} :pray:");
+
+            if (mention != String.Empty) await ReplyAsync($"Bless you, {mention} :pray:");
+            else if (username != String.Empty) await ReplyAsync($"Bless you, {username} :pray:");
+        }
+
+        [Priority(1)]
+        [Command("bless")]
+        [Summary("Blessed be the rains down in Africa")]
+        public async Task BlessUser([Summary("User to bless the rains with")] SocketUser user)
+        {
+            await ReplyAsync($"Bless you, {user.Mention} :pray:");
         }
 
         [Command("choose")]

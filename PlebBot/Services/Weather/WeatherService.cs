@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
@@ -37,7 +36,7 @@ namespace PlebBot.Services.Weather
 
             try
             {
-                var address = $"{this.apiAddress}/conditions/q/{location}.json";
+                var address = $"{this.apiAddress}/conditions/forecast/q/{location}.json";
                 embed = await BuildCurrentWeatherEmbed(address);
             }
             catch (RuntimeBinderException)
@@ -51,7 +50,7 @@ namespace PlebBot.Services.Weather
         public async Task<EmbedBuilder> Forecast(string location)
         {
             var call = $"{apiAddress}/conditions/forecast/q/{location}.json";
-            var embed = await BuildForecastEmbed(call, location);
+            var embed = await BuildForecastEmbed(call);
 
             return embed;
         }
@@ -61,6 +60,14 @@ namespace PlebBot.Services.Weather
             var json = await httpClient.GetStringAsync(address);
             dynamic response = JsonConvert.DeserializeObject(json);
 
+            if (response.response.results == null) return response;
+
+            address =
+                address.Replace(
+                    address.Substring(address.LastIndexOf("/q/", StringComparison.InvariantCulture)),
+                    $"{response.response.results.First.l.ToString()}.json");
+
+            response = await GetWeatherData(address);
             return response;
         }
 
@@ -68,13 +75,16 @@ namespace PlebBot.Services.Weather
         {
             var response = await GetWeatherData(address);
             var observation = response.current_observation;
+            var forecast = response.forecast.simpleforecast.forecastday.First;
 
             var kmh = (observation.wind_kph != 0) ? $"{observation.wind_kph} km/h" : "";
             var mph = (observation.wind_mph != 0) ? $"({observation.wind_mph} mph)" : "";
 
             string windDir = observation.wind_dir.ToString().ToLowerInvariant();
             windDir = await DetermineWind(windDir);
-            var windText = (windDir != String.Empty) ? $"Moving {windDir} at {kmh} {mph}" : "No wind";
+            var windText = 
+                (windDir != String.Empty && (kmh != String.Empty || mph != String.Empty)) ? 
+                $"Moving {windDir} at {kmh} {mph}" : "Calm";
 
             var embed = new EmbedBuilder();
             embed.WithTitle($"Current weather in {observation.display_location.full}");
@@ -83,7 +93,10 @@ namespace PlebBot.Services.Weather
             embed.AddInlineField(
                 "Weather Condition:",
                 $"{observation.weather} | Feels like " +
-                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F)");
+                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
+                $"Actual: {observation.temp_c}°C ({observation.temp_f}°F)\n" +
+                $"High: {forecast.high.celsius}°C ({forecast.high.fahrenheit}°F) | " +
+                $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)");
             embed.AddInlineField("Wind:", windText);
             embed.AddInlineField("Humidity:", $"{observation.relative_humidity}");
             embed.WithColor(237, 126, 0);
@@ -91,13 +104,14 @@ namespace PlebBot.Services.Weather
             return embed;
         }
 
-        private async Task<EmbedBuilder> BuildForecastEmbed(string address, string location)
+        private async Task<EmbedBuilder> BuildForecastEmbed(string address)
         {
             var forecast = await GetWeatherData(address);
 
             var embed = new EmbedBuilder();
             embed.WithTitle(
                 $"Weather forecast for {forecast.current_observation.display_location.full}");
+            embed.WithUrl(forecast.current_observation.forecast_url.ToString());
             embed.WithColor(237, 126, 0);
 
             var fct = forecast.forecast.simpleforecast.forecastday;
@@ -112,8 +126,8 @@ namespace PlebBot.Services.Weather
                 embed.AddField(
                     $"{day.date.weekday} ({day.date.monthname} {day.date.day})",
                     $"Conditions: {day.conditions} | " +
-                    $"High: {day.high.celcius}°C ({day.high.fahrenheit}°F) | " +
-                    $"Low: {day.low.celcius} ({day.low.fahrenheit}°F) | " +
+                    $"High: {day.high.celsius}°C ({day.high.fahrenheit}°F) | " +
+                    $"Low: {day.low.celsius}°C ({day.low.fahrenheit}°F) | " +
                     $"Wind: {windDir} at {day.avewind.kph} km/h ({day.avewind.mph} mph) | " +
                     $"Humidty: {day.avehumidity}%");
 
@@ -124,7 +138,7 @@ namespace PlebBot.Services.Weather
             return embed;
         }
 
-        private Task<string> DetermineWind(string windDir)
+        private static Task<string> DetermineWind(string windDir)
         {
             Enum.TryParse(windDir, out Directions dir);
             switch (dir)

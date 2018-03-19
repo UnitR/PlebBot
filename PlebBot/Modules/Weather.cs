@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Microsoft.CSharp.RuntimeBinder;
-using PlebBot.Services;
 using PlebBot.Services.Weather;
 
 namespace PlebBot.Modules
