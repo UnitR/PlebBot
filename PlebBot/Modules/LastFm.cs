@@ -46,7 +46,7 @@ namespace PlebBot.Modules
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Number of artists to show. Maximum 25. Default is 10.")] int limit = 10,
             [Summary("Your last.fm username")] string username = "")
-            => await SendChartAsync(ChartType.Artists, 10);
+            => await SendChartAsync(ChartType.Artists, limit, span, username);
 
         [Priority(1)]
         [Command("fm top artists", RunMode = RunMode.Async)]
@@ -65,8 +65,7 @@ namespace PlebBot.Modules
         [Priority(1)]
         [Command("fm top albums", RunMode = RunMode.Async)]
         [Summary("Get the top albums for a user")]
-        public async Task TopAlbums(
-            [Summary("Number of albums to show. Maximum 50. Default is 10.")] int limit = 10)
+        public async Task TopAlbums([Summary("Number of albums to show. Maximum 50. Default is 10.")] int limit = 10)
             => await SendChartAsync(ChartType.Albums, limit);
 
         [Command("fm top tracks", RunMode = RunMode.Async)]
@@ -80,12 +79,11 @@ namespace PlebBot.Modules
         [Priority(1)]
         [Command("fm top tracks", RunMode = RunMode.Async)]
         [Summary("Get the top tracks for a user")]
-        public async Task TopTracks(
-            [Summary("Number of tracks to show. Maximum 50. Default is 10.")] int limit = 10)
+        public async Task TopTracks([Summary("Number of tracks to show. Maximum 50. Default is 10.")] int limit = 10)
             => await SendChartAsync(ChartType.Tracks, limit);
 
         [Command("fmyt", RunMode = RunMode.Async)]
-        [Summary("Send a YtService link to your current scrobble")]
+        [Summary("Send a YouTube link to your current scrobble")]
         public async Task YtLink([Summary("Your last.fm username")] string username = "")
         {
             if (username == String.Empty)
@@ -107,9 +105,18 @@ namespace PlebBot.Modules
             await ReplyAsync(response);
         }
 
-        private async Task SendChartAsync(
-            ChartType chartType, int limit, string span = "", string username = "")
+        private async Task SendChartAsync(ChartType chartType, int limit, string span = "", string username = "")
         {
+            if (username == String.Empty)
+            {
+                var user = await FindUserAsync();
+                if (user.LastFm != null) username = user.LastFm;
+                else
+                {
+                    await Error("You haven't linked your last.fm account.");
+                    return;
+                }
+            }
             var response = await lastFm.GetChartAsync(chartType, limit, span, username, Context.User.Id);
             await ReplyAsync("", embed: response.Build());
         }

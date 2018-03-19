@@ -1,13 +1,11 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
-using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 
@@ -15,18 +13,15 @@ namespace PlebBot.Services.LastFm
 {
     public class LastFmService
     {
-        private readonly LastfmClient fmClient;
         private readonly string lastFmKey;
         private readonly Repository<User> userRepo;
         private readonly HttpClient httpClient;
-        private static string NotLinked => "You haven't linked your last.fm profile.";
-        private static string NotFound => "last.fm user not found.";
+        private static string NotFound = "last.fm user not found.";
         private readonly EmbedBuilder errorEmbed = new EmbedBuilder().WithTitle("Error").WithColor(Color.DarkRed);
 
         public LastFmService(Repository<User> repo, HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
-            fmClient = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
             lastFmKey = config["tokens:lastfm_key"];
             userRepo = repo;
             httpClient = client;
@@ -35,34 +30,25 @@ namespace PlebBot.Services.LastFm
         public async Task<EmbedBuilder> GetChartAsync(
             ChartType chart, int limit, string span = "", string username = "", ulong userId = 0)
         {
-            if (username != String.Empty)
-            {
-                if (!await CheckIfUserExistsAsync(username)) return errorEmbed.WithDescription(NotFound);
-            }
-            else
-            {
-                var condition = $"\"DiscordId\" = {(long) userId}";
-                var user = await userRepo.FindFirst(condition);
-                if (user.LastFm == null) return errorEmbed.WithDescription(NotLinked);
-                username = user.LastFm;
-            }
+            if (!await CheckIfUserExistsAsync(username))
+                return errorEmbed.WithDescription(NotFound);
 
             if (limit < 1 || limit > 25)
                 return errorEmbed.WithDescription(
-                    "Check the given limit and try again. Must be between a number between 1 and 25.");
+                    "Check the given limit and try again. Must be a number between 1 and 25.");
 
             EmbedBuilder embed;
-            var chartSpan = await DetermineSpan(span);
+            span = await DetermineSpan(span);
             switch (chart)
             {
                 case ChartType.Artists:
-                    embed = await GetTopArtistsAsync(username, chartSpan, limit);
+                    embed = await GetTopArtistsAsync(username, span, limit);
                     break;
                 case ChartType.Albums:
-                    embed = await GetTopAlbumsAsync(username, chartSpan, limit);
+                    embed = await GetTopAlbumsAsync(username, span, limit);
                     break;
                 case ChartType.Tracks:
-                    embed = await TopTracksAsync(span, username, limit);
+                    embed = await GetTopTracksAsync(username, span, limit);
                     break;
                 default:
                     return errorEmbed.WithDescription("<@164102776035475458> has fucked up again 🙄");
@@ -70,35 +56,42 @@ namespace PlebBot.Services.LastFm
             return embed;
         }
 
+        private async Task<dynamic> GetLastFmData(string call)
+        {
+            var json = await httpClient.GetStringAsync(call);
+            dynamic response = JsonConvert.DeserializeObject(json);
+            return response;
+        }
+
         //show user's scrobbles
         public async Task<EmbedBuilder> NowPlayingAsync(string username, ulong userId = 0)
         {
-            if (username != String.Empty)
-            {
-                if (!await CheckIfUserExistsAsync(username))
-                    return errorEmbed.WithDescription(NotFound);
-            }
-            else
-            {
-                var condition = $"\"DiscordId\" = {(long) userId}";
-                var user = await userRepo.FindFirst(condition);
-                if (user.LastFm == null) return errorEmbed.WithDescription(NotLinked);
-                username = user.LastFm;
-            }
+            if (!await CheckIfUserExistsAsync(username))
+                return errorEmbed.WithDescription(NotFound);
 
-            var response = await fmClient.User.GetRecentScrobbles(username, null, 1, 2);
-            if (!response.Any()) return errorEmbed.WithDescription("You haven't scrobbled any tracks.");
+            var call =
+                $"http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user={username}" +
+                $"&api_key={lastFmKey}&page=1&limit=2&format=json";
+            var response = await GetLastFmData(call);
+            if (response.recenttracks.track.Count <= 0)
+                return errorEmbed.WithDescription("The user hasn't scrobbled any tracks.");
 
-            var tracks = response.Content;
-            var currAlbum = tracks[0].AlbumName ?? "";
-            var prevAlbum = tracks[1].AlbumName ?? "";
-            var images = tracks[0].Images;
-            var albumArt = "";
-            if (images != null) albumArt = images.LastOrDefault(img => img != null)?.ToString();
+            var tracks = response.recenttracks.track;
+            string currAlbum = tracks[0].album["#text"] ?? "";
+            string prevAlbum = tracks[1].album["#text"] ?? "";
+
+            var images = tracks[0].image;
+            string albumArt = "";
+            for (var i = 3; i >= 0; i++)
+            {
+                if (tracks[0].image[i] == null) continue;
+                albumArt = tracks[0].image[i]["#text"];
+                break;
+            }
 
             var embed = new EmbedBuilder();
-            var currField = $"{response.Content[0].ArtistName} - {response.Content[0].Name}";
-            var prevField = $"{response.Content[1].ArtistName} - {response.Content[1].Name}";
+            var currField = $"{tracks[0].artist["#text"]} - {tracks[0].name}";
+            var prevField = $"{tracks[1].artist["#text"]} - {tracks[1].name}";
             if (currAlbum.Length > 0) currField += $" [{currAlbum}]";
             if (prevAlbum.Length > 0) prevField += $" [{prevAlbum}]";
             embed.WithTitle($"Recent tracks for {username}")
@@ -111,16 +104,17 @@ namespace PlebBot.Services.LastFm
             return embed;
         }
 
-
         public async Task<string> GetVideoLinkAsync(string username)
         {
-            var scrobble = await fmClient.User.GetRecentScrobbles(username, null, 1, 1);
-            if (scrobble.TotalItems <= 0) return "You haven't scrobbled any tracks.";
-
-            var track = scrobble.Content[0];
+            var call =
+                $"http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user={username}" +
+                $"&api_key={lastFmKey}&page=1&limit=1&format=json";
+            var response = await GetLastFmData(call);
+            if (response.recenttracks.track.Count <= 0) return null;
+            var track = response.recenttracks.track[0];
             var ytService = new YtService();
-            var response = await ytService.GetVideoLinkAsync($"{track.ArtistName} {track.Name}");
-            return response;
+            var link = await ytService.GetVideoLinkAsync($"{track.artist["#text"]} {track.name}");
+            return link;
         }
 
         public async Task<EmbedBuilder> SaveUserAsync(string username, ulong userId)
@@ -147,77 +141,52 @@ namespace PlebBot.Services.LastFm
             return embed;
         }
 
-        private async Task<EmbedBuilder> GetTopAlbumsAsync(string username, LastStatsTimeSpan span, int limit)
+        private async Task<EmbedBuilder> GetTopAlbumsAsync(string username, string span, int limit)
         {
-            var albums = await fmClient.User.GetTopAlbums(username, span, 1, limit);
-
-            if (albums.TotalItems <= 0) return errorEmbed.WithDescription($"{username} hasn't scrobbled any albums.");
+            var call = $"http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user={username}" +
+                       $"&api_key={lastFmKey}&period={span}&limit={limit}&format=json";
+            var response = await GetLastFmData(call);
+            if (response.topalbums.album.Count <= 0)
+                return errorEmbed.WithDescription($"No scrobbled albums.");
 
             var list = "";
             var i = 1;
-            foreach (var album in albums)
+            foreach (var album in response.topalbums.album)
             {
-                list += $"{i}. {album.ArtistName} - *{album.Name}* " +
-                        $"[{String.Format("{0:n0}", album.PlayCount)} scrobbles]\n";
+                list += $"{i}. {album.artist.name} - *{album.name}* " +
+                        $"[{String.Format("{0:n0}", album.playcount)} scrobbles]\n";
                 i++;
             }
 
             return await BuildTopAsync(list, username, "albums", span);
         }
 
-        private async Task<EmbedBuilder> GetTopArtistsAsync(string username, LastStatsTimeSpan span, int limit)
+        private async Task<EmbedBuilder> GetTopArtistsAsync(string username, string span, int limit)
         {
-            var artists = await fmClient.User.GetTopArtists(username, span, 1, limit);
+            var call = $"http://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user={username}" +
+                       $"&api_key={lastFmKey}&period={span}&limit={limit}&format=json";
+            var response = await GetLastFmData(call);
+            if (response.topartists.artist.Count <= 0)
+                return errorEmbed.WithDescription("No scrobbled artists.");
+
             var list = "";
             var i = 1;
-            foreach (var artist in artists)
+            foreach (var artist in response.topartists.artist)
             {
-                list += $"{i}. {artist.Name} [{String.Format("{0:n0}", artist.PlayCount)} scrobbles]\n";
+                list += $"{i}. {artist.name} [{String.Format("{0:n0}", artist.playcount)} scrobbles]\n";
                 i++;
             }
-
             return await BuildTopAsync(list, username, "artists", span);
         }
 
-        private async Task<EmbedBuilder> TopTracksAsync(string span, string username, int limit)
+        private async Task<EmbedBuilder> GetTopTracksAsync(string username, string span, int limit)
         {
-            string timeSpan;
-            switch (span.ToLower())
-            {
-                case "week":
-                    timeSpan = "7day";
-                    break;
-                case "month":
-                case "1month":
-                    timeSpan = "1month";
-                    break;
-                case "3months":
-                case "3month":
-                    timeSpan = "3month";
-                    break;
-                case "6months":
-                case "6month":
-                    timeSpan = "6month";
-                    break;
-                case "year":
-                    timeSpan = "12month";
-                    break;
-                default:
-                    timeSpan = "overall";
-                    break;
-            }
-            var list = await GetTopTracksAsync(username, timeSpan, limit);
-            var time = await DetermineSpan(span);
-            return await BuildTopAsync(list, username, "tracks", time);
-        }
-
-        private async Task<string> GetTopTracksAsync(string username, string span, int limit)
-        {
-            var url =
+            var call =
                 $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
                 $"&limit={limit}&api_key={lastFmKey}&format=json";
-            var json = await httpClient.GetStringAsync(url);
-            dynamic response = JsonConvert.DeserializeObject(json);
+            dynamic response = await GetLastFmData(call);
+            if (response.toptracks.track.Count <= 0)
+                return errorEmbed.WithDescription($"No scrobbled tracks.");
 
             var list = "";
             for (var i = 0; i < limit; i++)
@@ -226,51 +195,52 @@ namespace PlebBot.Services.LastFm
                 list += $"{i + 1}. {track.artist.name} - *{track.name}* " +
                         $"[{String.Format("{0:n0}", track.playcount)} scrobbles]\n";
             }
-            return list;
+
+            return await BuildTopAsync(list, username, "tracks", span);
         }
 
         //determines the time span used for the chart
-        private static Task<LastStatsTimeSpan> DetermineSpan(string span)
+        private static Task<string> DetermineSpan(string span)
         {
-            LastStatsTimeSpan timeSpan;
             switch (span.ToLower())
             {
                 case "week":
                 case "7days":
                 case "7day":
-                    timeSpan = LastStatsTimeSpan.Week;
+                    span = TimeSpan.Week;
                     break;
                 case "month":
                 case "30day":
                 case "30days":
-                    timeSpan = LastStatsTimeSpan.Month;
+                    span = TimeSpan.Month;
                     break;
                 case "3months":
                 case "3month":
                 case "90days":
                 case "90day":
-                    timeSpan = LastStatsTimeSpan.Quarter;
+                    span = TimeSpan.Quarter;
                     break;
                 case "6months":
                 case "6month":
-                    timeSpan = LastStatsTimeSpan.Half;
+                    span = TimeSpan.Half;
                     break;
                 case "year":
-                    timeSpan = LastStatsTimeSpan.Year;
+                case "12month":
+                case "12months":
+                    span = TimeSpan.Year;
                     break;
                 default:
-                    timeSpan = LastStatsTimeSpan.Overall;
+                    span = TimeSpan.Overall;
                     break;
             }
-
-            return Task.FromResult(timeSpan);
+            return Task.FromResult(span);
         }
 
         //builds the embed for the chart
-        private async Task<EmbedBuilder> BuildTopAsync(
-            string list, string username, string chartType, LastStatsTimeSpan span)
+        private async Task<EmbedBuilder> BuildTopAsync(string list, string username, string chartType, string span)
         {
             var totalScrobbles = await TotalScrobblesAsync(span, username);
+            span = await FormatSpan(span);
             var response = new EmbedBuilder()
                 .WithTitle($"Top {chartType} for {username} - {span} {totalScrobbles}")
                 .WithDescription(list)
@@ -278,56 +248,82 @@ namespace PlebBot.Services.LastFm
             return response;
         }
 
+        private Task<string> FormatSpan(string span)
+        {
+            switch (span)
+            {
+                case "overall":
+                default:
+                    break;
+                case "1month":
+                    span = "month";
+                    break;
+                case "3month":
+                case "6month":
+                    span = $"{span.First()} {span.Substring(1)}s";
+                    break;
+                case "7day":
+                    span = "week";
+                    break;
+                case "12month":
+                    span = "year";
+                    break;
+            }
+            return Task.FromResult(new CultureInfo("en-US").TextInfo.ToTitleCase(span));
+        }
+
         //Checks if the last.fm user exists
         private async Task<bool> CheckIfUserExistsAsync(string username)
         {
-            var response = await fmClient.User.GetInfoAsync(username);
-            if (!response.Success) return false;
-            if (response.Content.Id == "") return false;
-            if (response.Content.Playcount >= 0) return true;
+            var call = $"http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={username}" +
+                       $"&api_key={lastFmKey}&format=json";
+            var response = await GetLastFmData(call);
+            if (response.user != null) return true;
             return false;
         }
 
-        private async Task<string> TotalScrobblesAsync(LastStatsTimeSpan span, string username)
+        private async Task<string> TotalScrobblesAsync(string span, string username)
         {
             var scrobbles = 0;
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             long offset = 0;
-            switch (span.ToString().ToLower())
+            switch (span)
             {
-                case "week":
+                case "7day":
                     offset = DateTimeOffset.UtcNow.AddDays(-7).ToUnixTimeSeconds();
                     break;
-                case "month":
+                case "1month":
                     offset = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
                     break;
-                case "quarter":
+                case "3month":
                     offset = DateTimeOffset.UtcNow.AddDays(-91).ToUnixTimeSeconds();
                     break;
-                case "half":
+                case "6month":
                     offset = DateTimeOffset.UtcNow.AddDays(-182).ToUnixTimeSeconds();
                     break;
-                case "year":
+                case "12month":
                     offset = DateTimeOffset.UtcNow.AddDays(-365).ToUnixTimeSeconds();
                     break;
                 default:
-                    var user = await fmClient.User.GetInfoAsync(username);
-                    scrobbles = user.Content.Playcount;
                     break;
             }
 
-            if (offset != 0)
-            {
-                var url = "http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
-                          $"{username}&from={offset}to={now}&api_key={lastFmKey}" +
-                          "&page=1&limit=200&format=json";
+            var call = "http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
+                        $"{username}&from={offset}&to={now}&api_key={lastFmKey}&format=json";
+            var response = await GetLastFmData(call);
+            scrobbles = response.recenttracks["@attr"].total;
 
-                var json = await httpClient.GetStringAsync(url);
-                dynamic response = (JObject)JsonConvert.DeserializeObject(json);
-
-                scrobbles = response.recenttracks["@attr"].total;
-            }
             return $"[{String.Format("{0:n0}", scrobbles)} scrobbles total]";
         }
+    }
+
+    internal static class TimeSpan
+    {
+        internal static string Overall => "overall";
+        internal static string Week => "7day";
+        internal static string Month => "1month";
+        internal static string Quarter => "3month";
+        internal static string Half => "6month";
+        internal static string Year => "12month";
     }
 }

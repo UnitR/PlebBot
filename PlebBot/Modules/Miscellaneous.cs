@@ -72,7 +72,7 @@ namespace PlebBot.Modules
         }
 
         [Command("yt", RunMode = RunMode.Async)]
-        [Summary("Link a YtService video")]
+        [Summary("Link a YouTube video")]
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {
             var yt = new YtService();
