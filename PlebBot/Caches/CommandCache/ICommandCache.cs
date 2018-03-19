@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Discord;
 
-namespace PlebBot.Helpers.CommandCache
+namespace PlebBot.Caches.CommandCache
 {
     public interface ICommandCache<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {

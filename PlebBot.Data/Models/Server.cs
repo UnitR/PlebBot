@@ -6,7 +6,7 @@ namespace PlebBot.Data.Models
     {
         public Server()
         {
-            this.Roles = new List<Role>();
+            Roles = new List<Role>();
         }
 
         public int Id { get; set; }

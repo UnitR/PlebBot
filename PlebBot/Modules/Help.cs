@@ -82,7 +82,7 @@ namespace PlebBot.Modules
 
             if (!result.IsSuccess)
             {
-                await this.Error($"\"Sorry, I couldn\'t find a command like `{cmd}`");
+                await Error($"\"Sorry, I couldn\'t find a command like `{cmd}`");
                 return;
             }
 
@@ -107,7 +107,7 @@ namespace PlebBot.Modules
                 {
                     x.Name = $"{matched.Aliases.First()}";
                     x.Value = parameters +
-                              $"Summary:\n" +
+                              "Summary:\n" +
                               $"\t{matched.Summary}.\n\n\n";
                     x.IsInline = false;
                 });

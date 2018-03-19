@@ -1,70 +1,44 @@
-﻿using System.Net.Http;
+﻿using System;
 using System.Threading.Tasks;
 using Discord.Commands;
-using IF.Lastfm.Core.Api;
-using Microsoft.Extensions.Configuration;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
+using PlebBot.Services.LastFm;
 
 namespace PlebBot.Modules
 {
-    public partial class LastFm : BaseModule
+    public class LastFm : BaseModule
     {
-        private readonly LastfmClient fmClient;
-        private readonly string lastFmKey;
+        private readonly LastFmService lastFm;
         private readonly Repository<User> userRepo;
-        private readonly HttpClient httpClient;
-        private static string NotLinked => "You haven't linked your last.fm profile.";
-        private static string NotFound => "last.fm user not found.";
 
-        public LastFm(Repository<User> repo, HttpClient client)
+        public LastFm(LastFmService service, Repository<User> repo)
         {
-            var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
-            this.fmClient = new LastfmClient(config["tokens:lastfm_key"], config["tokens:lastfm_secret"]);
-            this.lastFmKey = config["tokens:lastfm_key"];
-            this.userRepo = repo;
-            this.httpClient = client;
+            lastFm = service;
+            userRepo = repo;
         }
 
         [Command("fm", RunMode = RunMode.Async)]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
-            => await HandleCommand(NowPlayingAsync, username);
-        
+        {
+            if (username == String.Empty)
+            {
+                username = await GetUsername(Context.User.Id);
+                if (username == null)
+                {
+                    await Error("User not found.");
+                    return;
+                }
+            }
+            var response = await lastFm.NowPlayingAsync(username);
+            await ReplyAsync("", embed: response.Build());
+        }
+
         [Command("fm set", RunMode = RunMode.Async)]
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
-        {
-            if (username != null)
-            {
-                if (await CheckIfUserExistsAsync(username))
-                {
-                    var findCondition = $"\"DiscordId\" = {Context.User.Id}";
-                    var user = await userRepo.FindFirst(findCondition);
-
-                    if (user != null)
-                    {
-                        var updateCondition = $"\"Id\" = {user.Id}";
-                        await userRepo.UpdateFirst("LastFm", username, updateCondition);
-
-                        await this.Success("Succesfully updated your last.fm username.");
-                    }
-                    else
-                    {
-                        string[] columns = {"DiscordId", "LastFm"};
-                        object[] values = {(long) Context.User.Id, username};
-                        await userRepo.Add(columns, values);
-
-                        await this.Success("last.fm username saved. You can now freely use the `fm` commands.");
-                    }
-                }
-                else await Error(NotFound);
-            }
-            else
-            {
-                await this.Error("You must provide a username.");
-            }
-        }
+            => await lastFm.SaveUserAsync(username, Context.User.Id);
 
         [Command("fm top artists", RunMode = RunMode.Async)]
         [Summary("Get the top artists for a user")]
@@ -72,7 +46,7 @@ namespace PlebBot.Modules
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Number of artists to show. Maximum 25. Default is 10.")] int limit = 10,
             [Summary("Your last.fm username")] string username = "")
-            => await SendChartAsync(ChartType.Artists, limit, span, username);
+            => await SendChartAsync(ChartType.Artists, 10);
 
         [Priority(1)]
         [Command("fm top artists", RunMode = RunMode.Async)]
@@ -110,10 +84,41 @@ namespace PlebBot.Modules
             [Summary("Number of tracks to show. Maximum 50. Default is 10.")] int limit = 10)
             => await SendChartAsync(ChartType.Tracks, limit);
 
-
         [Command("fmyt", RunMode = RunMode.Async)]
         [Summary("Send a YtService link to your current scrobble")]
         public async Task YtLink([Summary("Your last.fm username")] string username = "")
-            => await HandleCommand(SendYtLinkAsync, username);
+        {
+            if (username == String.Empty)
+            {
+                username = await GetUsername(Context.User.Id);
+                if (username == null)
+                {
+                    await Error("User not found.");
+                    return;
+                }
+            }
+
+            var response = await lastFm.GetVideoLinkAsync(username);
+            if (response == null)
+            {
+                await Error("No videos found.");
+                return;
+            }
+            await ReplyAsync(response);
+        }
+
+        private async Task SendChartAsync(
+            ChartType chartType, int limit, string span = "", string username = "")
+        {
+            var response = await lastFm.GetChartAsync(chartType, limit, span, username, Context.User.Id);
+            await ReplyAsync("", embed: response.Build());
+        }
+
+        private async Task<string> GetUsername(ulong userId)
+        {
+            var condition = $"\"DiscordId\" = {(long) userId}";
+            var user = await userRepo.FindFirst(condition);
+            return user.LastFm;
+        }
     }
 }

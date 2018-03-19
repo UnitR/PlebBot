@@ -7,10 +7,11 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using PlebBot.CommandCache;
+using PlebBot.Caches.CommandCache;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 using PlebBot.Services;
+using PlebBot.Services.LastFm;
 using PlebBot.Services.Weather;
 
 namespace PlebBot
@@ -19,7 +20,6 @@ namespace PlebBot
     {
         private CommandService commands;
         private DiscordSocketClient client;
-        private IServiceProvider provider;
         private IServiceCollection services;
         private IConfigurationRoot config;
 
@@ -35,7 +35,6 @@ namespace PlebBot
 
             services = new ServiceCollection();
             client = new DiscordSocketClient().UseCommandCache(services, 200);
-            provider = ConfigureServices(services);
 
             commands = new CommandService();
             await InstallAsync();
@@ -78,6 +77,7 @@ namespace PlebBot
             serviceCollection.AddSingleton(config);
             serviceCollection.AddSingleton<WeatherService>();
             serviceCollection.AddTransient<YtService>();
+            serviceCollection.AddSingleton<LastFmService>();
 
             return serviceCollection.BuildServiceProvider();
         }

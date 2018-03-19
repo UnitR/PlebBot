@@ -46,7 +46,7 @@ namespace PlebBot
                     if (!(msg.Exception is CommandException ex)) return Task.CompletedTask;
 
                     var channel = client.GetChannel(417956085253668864) as ISocketMessageChannel;
-                    channel?.SendMessageAsync($"Fuck you <@164102776035475458> fix me!!!!1\n" +
+                    channel?.SendMessageAsync("Fuck you <@164102776035475458> fix me!!!!1\n" +
                                               $"{ex.Message}\n\n" +
                                               $"{ex.InnerException.ToString()}\n");
                     return Task.CompletedTask;

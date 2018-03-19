@@ -21,14 +21,14 @@ namespace PlebBot.Modules
         [Summary("Check current weather conditions")]
         public async Task DisplayWeater(
             [Summary("The city you wish to check the current weather for")] [Remainder] string location = "")
-            => await this.HandleRequestAsync(location);
+            => await HandleRequestAsync(location);
 
         [Command("weather set", RunMode = RunMode.Async)]
         [Alias("wset")]
         [Summary("Link a city to your profile")]
         public async Task SetLocation(
             [Summary("The city you want to link to your profile")] [Remainder] string location)
-            => await this.HandleRequestAsync(location);
+            => await HandleRequestAsync(location);
 
         [Command("forecast", RunMode = RunMode.Async)]
         [Alias("fc")]
@@ -39,7 +39,7 @@ namespace PlebBot.Modules
             EmbedBuilder embed;
             if (location == String.Empty)
             {
-                var user = await this.FindUserAsync();
+                var user = await FindUserAsync();
                 if (user.City == null)
                 {
                     embed = WeatherResponse.NotLinkedError();
@@ -79,7 +79,7 @@ namespace PlebBot.Modules
 
             if (location == String.Empty)
             {
-                var user = await this.FindUserAsync();
+                var user = await FindUserAsync();
                 location = user.City;
             }
 

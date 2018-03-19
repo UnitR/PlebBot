@@ -7,14 +7,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using PlebBot.Helpers.CommandCache;
 
-// ReSharper disable once CheckNamespace
-namespace PlebBot.CommandCache
+namespace PlebBot.Caches.CommandCache
 {
     public class CommandCacheService : ICommandCache<ulong, ConcurrentBag<ulong>>, IDisposable
     {
-        public const int UNLIMITED = -1;
+        public const int Unlimited = -1;
 
         private readonly ConcurrentDictionary<ulong, ConcurrentBag<ulong>> cache
             = new ConcurrentDictionary<ulong, ConcurrentBag<ulong>>();
@@ -25,14 +23,11 @@ namespace PlebBot.CommandCache
         public CommandCacheService(DiscordSocketClient client, int capacity = 200)
         {
             // Make sure the max capacity is within an acceptable range, use it if it is.
-            if (capacity < 1 && capacity != UNLIMITED)
+            if (capacity < 1 && capacity != Unlimited)
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Capacity can not be lower than 1 unless capacity is CommandCacheService.UNLIMITED.");
             }
-            else
-            {
-                max = capacity;
-            }
+            max = capacity;
 
             // Create a timer that will clear out cached messages older than 2 hours every 30 minutes.
             autoClear = new Timer(OnTimerFired, null, 1800000, 1800000);
@@ -53,13 +48,13 @@ namespace PlebBot.CommandCache
                 throw new ArgumentNullException(nameof(values), "The supplied collection can not be null.");
             }
 
-            if (max != UNLIMITED && count >= max)
+            if (max != Unlimited && count >= max)
             {
-                int removeCount = count - max + 1;
+                var removeCount = count - max + 1;
                 // The left 42 bits represent the timestamp.
-                var orderedKeys = Enumerable.OrderBy<ulong, ulong>(cache.Keys, k => k >> 22).ToList();
+                var orderedKeys = cache.Keys.OrderBy(k => k >> 22).ToList();
                 // Remove items until we're under the maximum.
-                int successfulRemovals = 0;
+                var successfulRemovals = 0;
                 foreach (var orderedKey in orderedKeys)
                 {
                     if (successfulRemovals >= removeCount) break;
@@ -79,7 +74,7 @@ namespace PlebBot.CommandCache
             }
             else
             {
-                CommandCacheExtensions.AddMany(cache[key], values);
+                cache[key].AddMany(values);
             }
         }
 
@@ -89,7 +84,7 @@ namespace PlebBot.CommandCache
         {
             if (!TryGetValue(key, out ConcurrentBag<ulong> bag))
             {
-                Add(key, bag = new ConcurrentBag<ulong>() { value });
+                Add(key, new ConcurrentBag<ulong>() { value });
             }
             else
             {
@@ -139,7 +134,7 @@ namespace PlebBot.CommandCache
         {
             // Get all messages where the timestamp is older than 2 hours, then convert it to a list. The result of where merely contains references to the original
             // collection, so iterating and removing will throw an exception. Converting it to a list first avoids this.
-            var purge = Enumerable.Where<KeyValuePair<ulong, ConcurrentBag<ulong>>>(cache, p =>
+            var purge = cache.Where(p =>
             {
                 // The timestamp of a message can be calculated by getting the leftmost 42 bits of the ID, then
                 // adding January 1, 2015 as a Unix timestamp.
@@ -148,9 +143,7 @@ namespace PlebBot.CommandCache
 
                 return difference.TotalHours >= 2.0;
             }).ToList();
-
-            var removed = purge.Where(p => Remove(p.Key));
-
+            var unused = purge.Where(p => Remove(p.Key));
             UpdateCount();
         }
 

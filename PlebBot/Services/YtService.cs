@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
-using Discord.Commands;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
@@ -22,17 +21,16 @@ namespace PlebBot.Services
             service = new YouTubeService(new BaseClientService.Initializer()
             {
                 ApiKey = config["tokens:yt_key"],
-                ApplicationName = this.GetType().ToString()
+                ApplicationName = GetType().ToString()
             });
         }
 
-        public async Task<string> GetVideoLinkAsync(SocketCommandContext context, string query)
+        public async Task<string> GetVideoLinkAsync(string query)
         {
             var result = await GetSearchResultsAsync(query);
-
             if (result.Items.Count <= 0) return null;
-
             var videoId = result.Items.FirstOrDefault()?.Id.VideoId;
+
             var video = await GetVideoAsync(videoId);
             var videoMinutes = XmlConvert.ToTimeSpan(video.ContentDetails.Duration).ToString(@"mm");
             if (videoMinutes[0] == '0') videoMinutes = videoMinutes.Remove(0, 1);
@@ -40,7 +38,6 @@ namespace PlebBot.Services
 
             var response = $"{String.Format("{0:n0}", video.Statistics.ViewCount)} views | " +
                            $"Duration: {videoMinutes} minutes {videoSeconds} seconds";
-
             if (video.Statistics.LikeCount != null)
                 response += $" | {String.Format("{0:n0}", video.Statistics.LikeCount)} likes";
             if (video.Statistics.DislikeCount != null)
@@ -88,7 +85,6 @@ namespace PlebBot.Services
             request.Type = "video";
 
             var result = await request.ExecuteAsync();
-
             return result;
         }
     }

@@ -47,7 +47,7 @@ namespace PlebBot.Modules
             }
             else
             {
-                await this.Error("This server doesn't have any self-assignable roles.");
+                await Error("This server doesn't have any self-assignable roles.");
             }
         }
 
@@ -86,22 +86,13 @@ namespace PlebBot.Modules
                         }
 
                         await ((IGuildUser)Context.User).AddRoleAsync(assign);
-                        await this.Success($"Good job! You managed to get the '{assign?.Name}' role!");
+                        await Success($"Good job! You managed to get the '{assign?.Name}' role!");
                     }
-                    else
-                    {
-                        await this.Error("You already have this role assigned to you.");
-                    }
+                    else await Error("You already have this role assigned to you.");
                 }
-                else
-                {
-                    await this.Error($"There isn't a self-assignable role called '{role}'.");
-                }
+                else await Error($"There isn't a self-assignable role called '{role}'.");
             }
-            else
-            {
-                await this.Error("There are no self-assignable roles for the server.");
-            }
+            else await Error("There are no self-assignable roles for the server.");
         }
 
         [Command("remove")]
@@ -113,7 +104,7 @@ namespace PlebBot.Modules
 
             if (roleResult == null)
             {
-                await this.Error($"No role with the name {role} was found.");
+                await Error($"No role with the name {role} was found.");
                 return;
             }
 
@@ -130,11 +121,11 @@ namespace PlebBot.Modules
                 {
                     var guildRole = Context.Guild.Roles.FirstOrDefault(x => x.Id == r);
                     await user.RemoveRoleAsync(guildRole);
-                    await this.Success($"Removed '{roleResult.Name}' from your roles.");
+                    await Success($"Removed '{roleResult.Name}' from your roles.");
                 });
                 return;
             }
-            await this.Error($"You don't have '{roleResult.Name}' assigned to you.");
+            await Error($"You don't have '{roleResult.Name}' assigned to you.");
         }
 
 
@@ -167,16 +158,16 @@ namespace PlebBot.Modules
                     object[] values = { serverId, (long) roleFind.Id, roleFind.Name, isColour };
                     await roleRepo.Add(columns, values);
 
-                    await this.Success($"Added '{roleFind.Name}' to the list of self-assignable roles.");
+                    await Success($"Added '{roleFind.Name}' to the list of self-assignable roles.");
                 }
                 else
                 {
-                    await this.Error($"The '{roleFind.Name}' role is already set as self-assignable.");
+                    await Error($"The '{roleFind.Name}' role is already set as self-assignable.");
                 }
             }
             else
             {
-                await this.Error($"No role with the name '{role}' was found in the server.");
+                await Error($"No role with the name '{role}' was found in the server.");
             }
 
         }
@@ -193,12 +184,11 @@ namespace PlebBot.Modules
                 var delCondition = $"\"Id\" = {roleToRemove.Id}";
                 await roleRepo.DeleteFirst(delCondition);
 
-                await this.Success($"The '{roleToRemove.Name}' role has been successfully " +
-                                   $"removed from the self-assignable list.");
+                await Success(
+                    $"The '{roleToRemove.Name}' role has been successfully removed from the self-assignable list");
                 return;
             }
-
-            await this.Error($"No role with the name '{role}' has been found in the self-assignable list");
+            await Error($"No role with the name '{role}' has been found in the self-assignable list");
         }
 
         private async Task<List<Role>> GetServerRolesAsync()

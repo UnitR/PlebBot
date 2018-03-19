@@ -19,9 +19,9 @@ namespace PlebBot.Services.Weather
         public WeatherService(HttpClient client, Repository<User> repo)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
-            this.apiAddress = $"http://api.wunderground.com/api/{config["tokens:weather_key"]}";
-            this.httpClient = client;
-            this.userRepo = repo;
+            apiAddress = $"http://api.wunderground.com/api/{config["tokens:weather_key"]}";
+            httpClient = client;
+            userRepo = repo;
         }
 
         public async Task<EmbedBuilder> CurrentWeather(string location)
@@ -36,7 +36,7 @@ namespace PlebBot.Services.Weather
 
             try
             {
-                var address = $"{this.apiAddress}/conditions/forecast/q/{location}.json";
+                var address = $"{apiAddress}/conditions/forecast/q/{location}.json";
                 embed = await BuildCurrentWeatherEmbed(address);
             }
             catch (RuntimeBinderException)
@@ -194,7 +194,7 @@ namespace PlebBot.Services.Weather
 
             location = location.Substring(4);
             var condition = $"\"DiscordId\" = {userId}";
-            var user = await this.userRepo.FindFirst(condition);
+            var user = await userRepo.FindFirst(condition);
             if (user != null)
             {
                 await userRepo.UpdateFirst("City", location, condition);

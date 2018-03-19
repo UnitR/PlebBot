@@ -14,7 +14,7 @@ namespace PlebBot.Modules
 
         public RYM(Repository<User> repo)
         {
-            this.userRepo = repo;
+            userRepo = repo;
         }
 
         [Command("set")]
@@ -23,7 +23,7 @@ namespace PlebBot.Modules
         {
             if (username != null)
             {
-                var user = await this.FindUserAsync();
+                var user = await FindUserAsync();
                 if (user != null)
                 {
                     await userRepo.UpdateFirst("Rym", username, $"\"Id\" = {user.Id}");
@@ -36,11 +36,11 @@ namespace PlebBot.Modules
                     await userRepo.Add(columns, values);
                 }
 
-                await this.Success("Succesfully set your RYM username.");
+                await Success("Succesfully set your RYM username.");
                 return;
             }
 
-            await this.Error("You haven't provided a username.");
+            await Error("You haven't provided a username.");
         }
 
         [Command]
@@ -53,7 +53,7 @@ namespace PlebBot.Modules
 
             if (user?.Rym == null)
             {
-                await this.Error("You haven't linked your RYM account.");
+                await Error("You haven't linked your RYM account.");
                 return;
             }
 

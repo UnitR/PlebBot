@@ -14,9 +14,9 @@ namespace PlebBot.Data.Repositories
         public Repository()
         {
             var type = typeof(T);
-            if (type == typeof(User)) this.table = "Users";
-            if (type == typeof(Role)) this.table = "Roles";
-            if (type == typeof(Server)) this.table = "Servers";
+            if (type == typeof(User)) table = "Users";
+            if (type == typeof(Role)) table = "Roles";
+            if (type == typeof(Server)) table = "Servers";
         }
 
         public Task<int> Add(string column, object value)
@@ -24,7 +24,7 @@ namespace PlebBot.Data.Repositories
 
         public async Task<int> Add(string[] columns, object[] values)
         {
-            var sql = $"insert into public.\"{this.table}\" (";
+            var sql = $"insert into public.\"{table}\" (";
             foreach (var column in columns)
             {
                 sql += $"\"{column}\",";
@@ -46,14 +46,14 @@ namespace PlebBot.Data.Repositories
                 result = await conn.ExecuteAsync(sql, valuesDict);
             }
 
-            this.valuesDict = null;
+            valuesDict = null;
             return result;
         }
 
         public async Task<T> FindFirst(string condition)
         {
             T entity;
-            var sql = $"select * from \"{this.table}\" where {condition}";
+            var sql = $"select * from \"{table}\" where {condition}";
 
             using (var conn = BotContext.OpenConnection())
             {
@@ -77,7 +77,7 @@ namespace PlebBot.Data.Repositories
 
         public async Task<int> DeleteFirst(string condition)
         {
-            var sql = $"select * from \"{this.table}\" where {condition}";
+            var sql = $"select * from \"{table}\" where {condition}";
             var result = 0;
             using (var conn = BotContext.OpenConnection())
             {
@@ -85,7 +85,7 @@ namespace PlebBot.Data.Repositories
                 if(entity != null)
                 {
                     result = 
-                        await conn.ExecuteAsync($"delete from \"{this.table}\" where \"Id\" = @id",
+                        await conn.ExecuteAsync($"delete from \"{table}\" where \"Id\" = @id",
                         new {id = entity.Id});
                 }
             }
@@ -95,7 +95,7 @@ namespace PlebBot.Data.Repositories
 
         public async Task<int> DeleteAll(string condition)
         {
-            var sql = $"delete from \"{this.table}\" where {condition}";
+            var sql = $"delete from \"{table}\" where {condition}";
 
             int result;
             using (var conn = BotContext.OpenConnection())
@@ -115,7 +115,7 @@ namespace PlebBot.Data.Repositories
             var result = 0;
             using (var conn = BotContext.OpenConnection())
             {
-                var entity = await conn.QuerySingleOrDefaultAsync($"select \"Id\" from \"{this.table}\" where {condition}");
+                var entity = await conn.QuerySingleOrDefaultAsync($"select \"Id\" from \"{table}\" where {condition}");
                 if (entity != null)
                 {
                     sql += $" where \"Id\" = {entity.Id}";
@@ -123,7 +123,7 @@ namespace PlebBot.Data.Repositories
                 }
             }
 
-            this.valuesDict = null;
+            valuesDict = null;
             return result;
         }
 
@@ -141,13 +141,13 @@ namespace PlebBot.Data.Repositories
                 result = await conn.ExecuteAsync(sql, valuesDict);
             }
 
-            this.valuesDict = null;
+            valuesDict = null;
             return result;
         }
 
         private Task<string> BuildUpdateSql(string[] columns, object[] values)
         {
-            var sql = $"update \"{this.table}\" set ";
+            var sql = $"update \"{table}\" set ";
             valuesDict = new Dictionary<string, object>();
             for (int i = 0; i < columns.Length; i++)
             {

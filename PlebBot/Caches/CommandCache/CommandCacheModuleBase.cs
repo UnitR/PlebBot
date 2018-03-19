@@ -2,9 +2,8 @@
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using PlebBot.Helpers.CommandCache;
 
-namespace PlebBot.CommandCache
+namespace PlebBot.Caches.CommandCache
 {
     public abstract class CommandCacheModuleBase<TCommandCache, TCacheKey, TCacheValue, TCommandContext> : ModuleBase<TCommandContext>
         where TCommandCache : ICommandCache<TCacheKey, TCacheValue>

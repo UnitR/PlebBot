@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using PlebBot.CommandCache;
+using PlebBot.Caches.CommandCache;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 

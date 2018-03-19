@@ -16,7 +16,7 @@ namespace PlebBot.Modules
 
         public Admin(Repository<Server> repo)
         {
-            this.serverRepo = repo;
+            serverRepo = repo;
         }
 
         [Command("prefix")]
@@ -31,7 +31,7 @@ namespace PlebBot.Modules
             if (server != null)
             {
                 await serverRepo.UpdateFirst("Prefix", prefix, $"\"Id\" = {server.Id}");
-                await this.Success("Successfully updated the prefix for the server.");
+                await Success("Successfully updated the prefix for the server.");
             }
         }
     }

@@ -63,13 +63,12 @@ namespace PlebBot.Modules
 
         [Command("choose")]
         [Summary("Makes a decision for you")]
-        public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choice_list)
+        public async Task Choose([Remainder] [Summary("The options you want to choose from")] string choiceList)
         {
-            var options = choice_list.Split(',');
+            var options = choiceList.Split(',');
             options = options.Where((val, idx) => val.Trim() != "").ToArray();
-
             if (options.Length > 1) await PickRandom(options);
-            else await this.Error("You must provide a comma-separated list of options.");
+            else await Error("You must provide a comma-separated list of options.");
         }
 
         [Command("yt", RunMode = RunMode.Async)]
@@ -77,14 +76,13 @@ namespace PlebBot.Modules
         public async Task LinkVideo([Remainder] [Summary("The search query")] string query)
         {
             var yt = new YtService();
-            var response = await yt.GetVideoLinkAsync(Context, query);
+            var response = await yt.GetVideoLinkAsync(query);
             if (response != null)
             {
                 await ReplyAsync(response);
                 return;
             }
-
-            await this.Error("No videos found.");
+            await Error("No videos found.");
         }
 
         //choose a random element from a list and send the result

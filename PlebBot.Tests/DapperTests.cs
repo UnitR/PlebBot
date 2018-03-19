@@ -54,7 +54,7 @@ namespace PlebBot.Tests
             insertSql = insertSql.Remove(insertSql.Length - 1);
             insertSql += ") values (";
             var valuesDict = new Dictionary<string, dynamic>();
-            for (int i = 0; i < values.Length; i++)
+            for (var i = 0; i < values.Length; i++)
             {
                 insertSql += $"@val{i},";
                 valuesDict.Add($"val{i}", values[i]);
@@ -68,7 +68,7 @@ namespace PlebBot.Tests
 
                 id = conn.QueryFirst<string>(
                     $"select \"DiscordId\" from public.\"{table}\"" +
-                    $" where \"DiscordId\" = @id",
+                    " where \"DiscordId\" = @id",
                     new {id = discordId});
             }
 

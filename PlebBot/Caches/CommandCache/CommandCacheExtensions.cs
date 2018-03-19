@@ -5,7 +5,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace PlebBot.CommandCache
+namespace PlebBot.Caches.CommandCache
 {
     public static class CommandCacheExtensions
     {
@@ -24,7 +24,7 @@ namespace PlebBot.CommandCache
 
         public static ConcurrentBag<T> AddMany<T>(this ConcurrentBag<T> bag, IEnumerable<T> values)
         {
-            foreach (T item in values)
+            foreach (var item in values)
             {
                 bag.Add(item);
             }
