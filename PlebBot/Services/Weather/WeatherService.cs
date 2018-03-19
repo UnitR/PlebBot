@@ -15,6 +15,7 @@ namespace PlebBot.Services.Weather
         private readonly HttpClient httpClient;
         private readonly string apiAddress;
         private readonly Repository<User> userRepo;
+        private EmbedBuilder embed;
 
         public WeatherService(HttpClient client, Repository<User> repo)
         {
@@ -22,12 +23,13 @@ namespace PlebBot.Services.Weather
             apiAddress = $"http://api.wunderground.com/api/{config["tokens:weather_key"]}";
             httpClient = client;
             userRepo = repo;
+            embed = new EmbedBuilder().WithFooter(
+                "Weather data provided by the Weather Underground",
+                "https://icons.wxug.com/logos/PNG/wundergroundLogo_4c_rev.png");
         }
 
         public async Task<EmbedBuilder> CurrentWeather(string location)
         {
-            EmbedBuilder embed;
-
             if (location == null)
             {
                 embed = WeatherResponse.NoLocation();
@@ -50,7 +52,7 @@ namespace PlebBot.Services.Weather
         public async Task<EmbedBuilder> Forecast(string location)
         {
             var call = $"{apiAddress}/conditions/forecast/q/{location}.json";
-            var embed = await BuildForecastEmbed(call);
+            embed = await BuildForecastEmbed(call);
 
             return embed;
         }
@@ -86,7 +88,6 @@ namespace PlebBot.Services.Weather
                 (windDir != String.Empty && (kmh != String.Empty || mph != String.Empty)) ? 
                 $"Moving {windDir} at {kmh} {mph}" : "Calm";
 
-            var embed = new EmbedBuilder();
             embed.WithTitle($"Current weather in {observation.display_location.full}");
             embed.WithUrl(observation.forecast_url.ToString());
             embed.WithThumbnailUrl($"https://icons.wxug.com/i/c/b/{observation.icon}.gif");
@@ -108,7 +109,6 @@ namespace PlebBot.Services.Weather
         {
             var forecast = await GetWeatherData(address);
 
-            var embed = new EmbedBuilder();
             embed.WithTitle(
                 $"Weather forecast for {forecast.current_observation.display_location.full}");
             embed.WithUrl(forecast.current_observation.forecast_url.ToString());
@@ -185,7 +185,6 @@ namespace PlebBot.Services.Weather
 
         public async Task<EmbedBuilder> SaveLocation(string location, long userId)
         {
-            EmbedBuilder embed;
             if (location == null)
             {
                 embed = WeatherResponse.NoLocation();
