@@ -39,5 +39,17 @@ namespace PlebBot.Modules
 
             return user;
         }
+
+        protected override void BeforeExecute(CommandInfo command)
+        {
+            typing = Context.Channel.EnterTypingState();
+            base.BeforeExecute(command);
+        }
+
+        protected override void AfterExecute(CommandInfo command)
+        {
+            base.AfterExecute(command);
+            typing.Dispose();
+        }
     }
 }

@@ -26,9 +26,7 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
 
-            var result = await commands.ExecuteAsync(context, argPos, ConfigureServices(services));
-            if (!result.IsSuccess)
-                await context.Channel.SendMessageAsync(result.ErrorReason);
+            await commands.ExecuteAsync(context, argPos, ConfigureServices(services));
 
             commands.Log += msg =>
             {

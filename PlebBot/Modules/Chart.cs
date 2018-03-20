@@ -8,7 +8,6 @@ using Discord.WebSocket;
 using Npgsql;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Preconditions;
 
 namespace PlebBot.Modules
 {
@@ -24,11 +23,12 @@ namespace PlebBot.Modules
             userRepo = repo;
         }
 
-        [Chartposting]
         [Command("set", RunMode = RunMode.Async)]
         [Summary("Link a chart to your account.")]
         public async Task SetChart(string chartLink = "")
         {
+            if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+
             if (chartLink == String.Empty)
             {
                 var temp = Context.Message.Attachments.First().Filename;
@@ -52,11 +52,12 @@ namespace PlebBot.Modules
             }
         }
 
-        [Chartposting]
         [Command(RunMode = RunMode.Async)]
         [Summary("Send your chart")]
         public async Task SendChart()
         {
+            if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+
             var condition = $"\"DiscordId\" = {(long) Context.User.Id}";
             var user = await userRepo.FindFirst(condition);
             var img = new MemoryStream(user.Chart);
