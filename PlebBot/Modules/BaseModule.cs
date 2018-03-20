@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using PlebBot.Caches.CommandCache;
@@ -9,6 +10,8 @@ namespace PlebBot.Modules
 {
     public class BaseModule : CommandCacheModuleBase<SocketCommandContext>
     {
+        private IDisposable typing;
+
         protected async Task Success(string successText)
         {
             var response = new EmbedBuilder()
