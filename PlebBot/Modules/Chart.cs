@@ -8,6 +8,7 @@ using Discord.WebSocket;
 using Npgsql;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
+using System.Drawing;
 
 namespace PlebBot.Modules
 {
@@ -69,6 +70,18 @@ namespace PlebBot.Modules
             await Context.Channel.SendFileAsync(
                 img, $"{Context.User.Username}_chart.png",
                 $"{Context.User.Mention}'s chart:");
+        }
+
+        [Group("top")]
+        public class TopCharts : Chart
+        {
+            public TopCharts(HttpClient client, Repository<User> repo) : base(client, repo)
+            {
+            }
+
+            //[Command("weekly")]
+            //[Alias("week")]
+            //public async Task TopWeek()
         }
     }
 }

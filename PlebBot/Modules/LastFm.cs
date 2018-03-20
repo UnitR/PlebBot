@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Preconditions;
 using PlebBot.Services.LastFm;
 
 namespace PlebBot.Modules
@@ -120,8 +120,56 @@ namespace PlebBot.Modules
                     return;
                 }
             }
-            var response = await lastFm.GetChartAsync(chartType, limit, span, username, Context.User.Id);
-            await ReplyAsync("", embed: response.Build());
+
+            var response = await lastFm.GetTopAsync(chartType, limit, span, username);
+            if (response == null)
+            {
+                await Error("No scrobbled albums.");
+                return;
+            }
+
+            var list = "";
+            var i = 1;
+            switch (chartType)
+            {
+                case ChartType.Albums:
+                    foreach (var album in response.topalbums.album)
+                    {
+                        list += $"{i}. {album.artist.name} - *{album.name}* " +
+                                $"[{String.Format("{0:n0}", album.playcount)} scrobbles]\n";
+                        i++;
+                    }
+                    break;
+                case ChartType.Artists:
+                    foreach (var artist in response.topartists.artist)
+                    {
+                        list += $"{i}. {artist.name} [{String.Format("{0:n0}", artist.playcount)} scrobbles]\n";
+                        i++;
+                    }
+                    break;
+                case ChartType.Tracks:
+                    foreach(var track in response.toptracks.track)
+                    {
+                        list += $"{i}. {track.artist.name} - *{track.name}* " +
+                                $"[{String.Format("{0:n0}", track.playcount)} scrobbles]\n";
+                        i++;
+                    }
+                    break;
+            }
+            var embed = await BuildTopAsync(list, username, chartType.ToString().ToLowerInvariant(), span);
+            await ReplyAsync("", embed: embed.Build());
+        }
+
+        //builds the embed for the chart
+        private async Task<EmbedBuilder> BuildTopAsync(string list, string username, string chartType, string span)
+        {
+            var totalScrobbles = await lastFm.TotalScrobblesAsync(span, username);
+            span = await lastFm.FormatSpan(span);
+            var embed = new EmbedBuilder()
+                .WithTitle($"Top {chartType} for {username} - {span} {totalScrobbles}")
+                .WithDescription(list)
+                .WithColor(Color.Gold);
+            return embed;
         }
 
         private async Task<string> GetUsername(ulong userId)
