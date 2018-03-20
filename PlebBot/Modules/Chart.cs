@@ -60,6 +60,11 @@ namespace PlebBot.Modules
 
             var condition = $"\"DiscordId\" = {(long) Context.User.Id}";
             var user = await userRepo.FindFirst(condition);
+            if (user.Chart == null)
+            {
+                await Error("You haven't saved a chart to your profile.");
+                return;
+            }
             var img = new MemoryStream(user.Chart);
             await Context.Channel.SendFileAsync(
                 img, $"{Context.User.Username}_chart.png",
