@@ -11,5 +11,7 @@
         public string Rym { get; set; }
 
         public string City { get; set; }
+
+        public byte[] Chart { get; set; }
     }
 }

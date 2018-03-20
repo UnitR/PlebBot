@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
+using PlebBot.Preconditions;
 using PlebBot.Services.LastFm;
 
 namespace PlebBot.Modules
@@ -107,7 +108,9 @@ namespace PlebBot.Modules
 
         private async Task SendChartAsync(ChartType chartType, int limit, string span = "", string username = "")
         {
-            if (username == String.Empty)
+            if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+
+            if (username == string.Empty)
             {
                 var user = await FindUserAsync();
                 if (user.LastFm != null) username = user.LastFm;
