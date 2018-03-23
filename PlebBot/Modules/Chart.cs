@@ -48,6 +48,7 @@ namespace PlebBot.Modules
                     await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
                 else
                     await userRepo.UpdateFirst("Chart", imageBytes, $"\"DiscordId\" = {(long) Context.User.Id}");
+
                 await Success("Successfully saved the chart.");
             }
             catch (NpgsqlException ex)
