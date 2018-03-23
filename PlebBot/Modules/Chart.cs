@@ -8,7 +8,8 @@ using Discord.WebSocket;
 using Npgsql;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using System.Drawing;
+using PlebBot.Services.Chart;
+using PlebBot.TypeReaders;
 
 namespace PlebBot.Modules
 {
@@ -17,11 +18,13 @@ namespace PlebBot.Modules
     {
         private readonly HttpClient httpClient;
         private readonly Repository<User> userRepo;
+        private readonly ChartService chartService;
 
-        public Chart(HttpClient client, Repository<User> repo)
+        public Chart(HttpClient client, Repository<User> repo, ChartService service)
         {
             httpClient = client;
             userRepo = repo;
+            chartService = service;
         }
 
         [Command("set", RunMode = RunMode.Async)]
@@ -36,14 +39,15 @@ namespace PlebBot.Modules
                 if (temp.EndsWith("png") || temp.EndsWith(".jpg") || temp.EndsWith(".jpeg") || temp.EndsWith(".bmp"))
                     chartLink = Context.Message.Attachments.First().Url;
             }
-            var stream = await httpClient.GetByteArrayAsync(chartLink);
-            var imgBytes = new byte[stream.GetLongLength(0)];
-            stream.CopyTo(imgBytes, 0);
 
-            var condition = $"\"DiscordId\" = {(long) Context.User.Id}";
+            var imageBytes = await httpClient.GetByteArrayAsync(chartLink);
             try
             {
-                await userRepo.UpdateFirst("Chart", imgBytes, condition);
+                var user = await FindUserAsync();
+                if (user == null)
+                    await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
+                else
+                    await userRepo.UpdateFirst("Chart", imageBytes, $"\"DiscordId\" = {(long) Context.User.Id}");
                 await Success("Successfully saved the chart.");
             }
             catch (NpgsqlException ex)
@@ -61,27 +65,44 @@ namespace PlebBot.Modules
 
             var condition = $"\"DiscordId\" = {(long) Context.User.Id}";
             var user = await userRepo.FindFirst(condition);
-            if (user.Chart == null)
+            if (user?.Chart == null)
             {
                 await Error("You haven't saved a chart to your profile.");
                 return;
             }
-            var img = new MemoryStream(user.Chart);
-            await Context.Channel.SendFileAsync(
-                img, $"{Context.User.Username}_chart.png",
-                $"{Context.User.Mention}'s chart:");
+
+            using (Stream stream = new MemoryStream(user.Chart))
+            {
+                await Context.Channel.SendFileAsync(stream, $"{Context.User.Username}_chart.png",
+                    $"{Context.User.Mention}'s chart:");
+
+            }
         }
 
         [Group("top")]
         public class TopCharts : Chart
         {
-            public TopCharts(HttpClient client, Repository<User> repo) : base(client, repo)
+            public TopCharts(HttpClient client, Repository<User> repo, ChartService service)
+                : base(client, repo, service)
             {
             }
 
-            //[Command("weekly")]
-            //[Alias("week")]
-            //public async Task TopWeek()
+            [Command(RunMode = RunMode.Async)]
+            public async Task Top(ChartType type, string span, 
+                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size)
+            {
+                var user = await FindUserAsync();
+                if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
+
+                var result = await chartService.GetChartAsync(size, type, user.LastFm, span);
+                using (Stream stream = new MemoryStream(result))
+                {
+                    await Context.Channel.SendFileAsync(
+                        stream, 
+                        $"{user}_top_{type}_{size}.png", 
+                        $"Top {type.ToString().ToLowerInvariant()} for {Context.User.Username}:");
+                }
+            }
         }
     }
 }

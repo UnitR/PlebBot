@@ -4,7 +4,8 @@ using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
-using PlebBot.Services.LastFm;
+using PlebBot.Services;
+using PlebBot.Services.Chart;
 
 namespace PlebBot.Modules
 {
@@ -176,7 +177,7 @@ namespace PlebBot.Modules
         {
             var condition = $"\"DiscordId\" = {(long) userId}";
             var user = await userRepo.FindFirst(condition);
-            return user.LastFm;
+            return user?.LastFm;
         }
     }
 }

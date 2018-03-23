@@ -8,8 +8,9 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
+using PlebBot.Services.Chart;
 
-namespace PlebBot.Services.LastFm
+namespace PlebBot.Services
 {
     public class LastFmService
     {
@@ -80,8 +81,7 @@ namespace PlebBot.Services.LastFm
             string currAlbum = tracks[0].album["#text"] ?? "";
             string prevAlbum = tracks[1].album["#text"] ?? "";
 
-            var images = tracks[0].image;
-            string albumArt = "";
+            var albumArt = "";
             for (var i = 3; i >= 0; i++)
             {
                 if (tracks[0].image[i] == null) continue;
@@ -174,30 +174,30 @@ namespace PlebBot.Services.LastFm
                 case "week":
                 case "7days":
                 case "7day":
-                    span = TimeSpan.Week;
+                    span = ChartSpan.Week;
                     break;
                 case "month":
                 case "30day":
                 case "30days":
-                    span = TimeSpan.Month;
+                    span = ChartSpan.Month;
                     break;
                 case "3months":
                 case "3month":
                 case "90days":
                 case "90day":
-                    span = TimeSpan.Quarter;
+                    span = ChartSpan.Quarter;
                     break;
                 case "6months":
                 case "6month":
-                    span = TimeSpan.Half;
+                    span = ChartSpan.Half;
                     break;
                 case "year":
                 case "12month":
                 case "12months":
-                    span = TimeSpan.Year;
+                    span = ChartSpan.Year;
                     break;
                 default:
-                    span = TimeSpan.Overall;
+                    span = ChartSpan.Overall;
                     break;
             }
             return Task.FromResult(span);
@@ -236,7 +236,6 @@ namespace PlebBot.Services.LastFm
 
         public async Task<string> TotalScrobblesAsync(string span, string username)
         {
-            var scrobbles = 0;
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             long offset = 0;
             switch (span)
@@ -256,26 +255,14 @@ namespace PlebBot.Services.LastFm
                 case "12month":
                     offset = DateTimeOffset.UtcNow.AddDays(-365).ToUnixTimeSeconds();
                     break;
-                default:
-                    break;
             }
 
             var call = "http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
                         $"{username}&from={offset}&to={now}&api_key={lastFmKey}&format=json";
             var response = await GetLastFmData(call);
-            scrobbles = response.recenttracks["@attr"].total;
+            var scrobbles = response.recenttracks["@attr"].total;
 
             return $"[{String.Format("{0:n0}", scrobbles)} scrobbles total]";
         }
-    }
-
-    public static class TimeSpan
-    {
-        public static string Overall => "overall";
-        public static string Week => "7day";
-        public static string Month => "1month";
-        public static string Quarter => "3month";
-        public static string Half => "6month";
-        public static string Year => "12month";
     }
 }

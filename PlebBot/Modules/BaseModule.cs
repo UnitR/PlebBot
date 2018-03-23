@@ -8,6 +8,7 @@ using PlebBot.Data.Repositories;
 
 namespace PlebBot.Modules
 {
+    //TODO: Save data method for handling updating and saving [set] commands
     public class BaseModule : CommandCacheModuleBase<SocketCommandContext>
     {
         private IDisposable typing;

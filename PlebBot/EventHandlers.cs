@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using PlebBot.Data.Models;
@@ -26,7 +27,8 @@ namespace PlebBot
             if (!(message.HasStringPrefix(prefix, ref argPos) ||
                   message.HasMentionPrefix(client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
 
-            await commands.ExecuteAsync(context, argPos, ConfigureServices(services));
+            var result = await commands.ExecuteAsync(context, argPos, ConfigureServices(services));
+            Error(result, context);
 
             commands.Log += msg =>
             {
@@ -40,6 +42,12 @@ namespace PlebBot
             };
         }
 
+        [Conditional("DEBUG")]
+        private static void Error(IResult result, ICommandContext context)
+        {
+            if (!result.IsSuccess)
+                context.Channel.SendMessageAsync(result.ErrorReason);
+        }
 
         private async Task HandleJoinGuildAsync(SocketGuild guild)
         {
