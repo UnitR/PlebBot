@@ -11,8 +11,9 @@ using PlebBot.Caches.CommandCache;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 using PlebBot.Services;
-using PlebBot.Services.LastFm;
+using PlebBot.Services.Chart;
 using PlebBot.Services.Weather;
+using PlebBot.TypeReaders;
 
 namespace PlebBot
 {
@@ -68,16 +69,19 @@ namespace PlebBot
             serviceCollection.AddSingleton(new CommandService(new CommandServiceConfig
             {
                 DefaultRunMode = RunMode.Async,
-                LogLevel = LogSeverity.Verbose
+                LogLevel = LogSeverity.Debug
             })); 
             serviceCollection.AddSingleton<HttpClient>();
             serviceCollection.AddTransient<Repository<Server>>();
             serviceCollection.AddTransient<Repository<Role>>();
             serviceCollection.AddTransient<Repository<User>>();
             serviceCollection.AddSingleton(config);
-            serviceCollection.AddSingleton<WeatherService>();
+            serviceCollection.AddTransient<WeatherService>();
             serviceCollection.AddTransient<YtService>();
-            serviceCollection.AddSingleton<LastFmService>();
+            serviceCollection.AddTransient<LastFmService>();
+            serviceCollection.AddTransient<ChartService>();
+            commands.AddTypeReader<ChartSize>(new ChartSizeReader());
+            commands.AddTypeReader<ChartType>(new ChartTypeReader());
 
             return serviceCollection.BuildServiceProvider();
         }
