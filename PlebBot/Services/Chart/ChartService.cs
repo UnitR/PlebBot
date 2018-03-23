@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using ImageMagick;
+using SkiaSharp;
 
 namespace PlebBot.Services.Chart
 {
@@ -28,77 +29,46 @@ namespace PlebBot.Services.Chart
             return result;
         }
 
-        private async Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
+        //TODO: add names to charts
+        private Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
         {
-            byte[] bytes;
-            using (var images = new MagickImageCollection())
+            var images = new List<SKBitmap>(chartSize * chartSize);
+            byte[] result;
+
+            images.AddRange(imageDictionary.Select(image => SKBitmap.Decode(image.Value)));
+
+            var height = images[0].Height * chartSize;
+            var width = images[0].Width * chartSize;
+
+            using (var tempSurface = SKSurface.Create(new SKImageInfo(width, height)))
             {
-                foreach (var image in imageDictionary)
+                var canvas = tempSurface.Canvas;
+                canvas.Clear(SKColors.Black);
+                var offset = 0;
+                var offsetTop = 0;
+                var i = 1;
+                foreach (var image in images)
                 {
-                    MagickImage img;
-                    if (image.Value == null)
+                    canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
+                    offset += images[i].Width;
+                    if (i == chartSize)
                     {
-                        img = new MagickImage(MagickColors.Black, 300, 300);
+                        offset = 0;
+                        offsetTop += image.Height;
+                        i = 1;
+                        continue;
                     }
-                    else img = await GenerateImage(image.Value);
-                    new Drawables()
-                        .TextAlignment(TextAlignment.Left)
-                        .StrokeColor(MagickColors.White)
-                        .FillColor(MagickColors.White)
-                        .TextAntialias(true)
-                        .Font("Tahoma")
-                        .FontPointSize(12.5)
-                        .Text(0, 11, image.Key)
-                        .TextKerning(1.5)
-                        .TextUnderColor(MagickColors.Black)
-                        .StrokeAntialias(true)
-                        .Draw(img);
-                    images.Add(img);
+                    i++;
                 }
-
-                var settings = new MontageSettings()
-                {
-                    TileGeometry = new MagickGeometry(chartSize, chartSize),
-                    BackgroundColor = MagickColors.Black,
-                    Geometry = new MagickGeometry(900, 900)
-                };
-                using (var result = images.Montage(settings))
-                {
-                    result.Scale(new Percentage(20));
-                    bytes = result.ToByteArray(MagickFormat.Png);
-                }
-            }
-            return bytes;
-        }
-
-        private Task<MagickImage> GenerateImage(byte[] image)
-        {
-            var readSettings = new MagickReadSettings()
-            {
-                Width = 300,
-                Height = 300,
-            };
-
-            var fileType = image.GetFileType();
-            switch (fileType.Extension)
-            {
-                case "png":
-                    readSettings.Format = MagickFormat.Png;
-                    break;
-                case "jpeg":
-                    readSettings.Format = MagickFormat.Jpeg;
-                    break;
-                case "gif":
-                    readSettings.Format = MagickFormat.Gif;
-                    break;
-                case "bmp":
-                    readSettings.Format = MagickFormat.Bmp;
-                    break;
+                result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
             }
 
-            var img = new MagickImage(image, readSettings);
-            if(img.Format != MagickFormat.Png) img.Format = MagickFormat.Png;
-            return Task.FromResult(img);
+            foreach (var image in images)
+            {
+                image.Dispose();
+            }
+
+            return Task.FromResult(result);
         }
 
         private async Task<Dictionary<string, byte[]>> GetAlbumArt(
@@ -107,7 +77,7 @@ namespace PlebBot.Services.Chart
             var intSize = (int) size;
             intSize *= intSize;
             var response = await lastFm.GetTopAsync(type, intSize, span, username);
-            var imageDictionary = new Dictionary<string, byte[]>();
+            var imageDictionary = new Dictionary<string, byte[]>(intSize);
 
             switch (type)
             {

@@ -15,10 +15,10 @@
     <PackageReference Include="Google.Apis.Core" Version="1.32.2" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.32.2.1131" />
     <PackageReference Include="Discord.Net" Version="1.0.2" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.4.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
+    <PackageReference Include="SkiaSharp" Version="1.60.0" />
     <PackageReference Include="YoutubeExplode" Version="4.1.0" />
   </ItemGroup>
 
