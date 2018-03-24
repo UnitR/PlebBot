@@ -42,30 +42,30 @@ namespace PlebBot.Services.Chart
             var height = images[0].Height * chartSize;
             var width = images[0].Width * chartSize;
 
-            using (var tempSurface = SKSurface.Create(new SKImageInfo(width, height)))
+            var tempSurface = SKSurface.Create(new SKImageInfo(width, height));
+            var canvas = tempSurface.Canvas;
+            canvas.Clear(SKColors.Black);
+            var offset = 0;
+            var offsetTop = 0;
+            var i = 1;
+            foreach (var image in images)
             {
-                var canvas = tempSurface.Canvas;
-                canvas.Clear(SKColors.Black);
-                var offset = 0;
-                var offsetTop = 0;
-                var i = 1;
-                foreach (var image in images)
+                if (image == null) continue;
+                canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
+                canvas.Flush();
+                offset += images[i].Width;
+                if (i == chartSize)
                 {
-                    if (image == null) continue;
-                    canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
-                    offset += images[i].Width;
-                    if (i == chartSize)
-                    {
-                        offset = 0;
-                        offsetTop += image.Height;
-                        i = 1;
-                        continue;
-                    }
-                    i++;
+                    offset = 0;
+                    offsetTop += image.Height;
+                    i = 1;
+                    continue;
                 }
-                result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
+                i++;
             }
+            result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
 
+            tempSurface.Dispose();
             foreach (var image in images)
             {
                 image?.Dispose();
