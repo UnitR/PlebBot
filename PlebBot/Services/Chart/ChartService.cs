@@ -33,11 +33,11 @@ namespace PlebBot.Services.Chart
         //TODO: add names to charts
         private static Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
         {
-            var images = new List<SKBitmap>(chartSize * chartSize);
+            var images = new List<SKBitmap>(imageDictionary.Count);
             byte[] result;
 
             images.AddRange(
-                from image in imageDictionary where image.Value != null select SKBitmap.Decode(image.Value));
+                from image in imageDictionary where image.Value.Length != 0 select SKBitmap.Decode(image.Value));
 
             var height = images[0].Height * chartSize;
             var width = images[0].Width * chartSize;
@@ -102,7 +102,7 @@ namespace PlebBot.Services.Chart
                 for (var j = 2; j >= 0; j--)
                 {
                     url = response[i].image[j]["#text"].ToString();
-                    if (!string.IsNullOrEmpty(url)) break;
+                    if (!String.IsNullOrEmpty(url)) break;
                 }
 
                 if (!String.IsNullOrEmpty(url))
@@ -111,8 +111,9 @@ namespace PlebBot.Services.Chart
                 }
 
                 var name = new StringBuilder();
-                name.Append($" {response[i].name} ");
-                if (response[i].artist != null) name.Append($"\n {response[i].artist.name} ");
+                name.Append($"{response[i].name}");
+                if (response[i].artist != null) name.Append($"\n{response[i].artist.name}");
+                if (art == null) art = new byte[] { };
                 imageDictionary.Add(name.ToString(), art);
             }
 
