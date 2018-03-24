@@ -31,7 +31,7 @@ namespace PlebBot.Services.Chart
         }
 
         //TODO: add names to charts
-        private Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
+        private static Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
         {
             var images = new List<SKBitmap>(chartSize * chartSize);
             byte[] result;
@@ -68,7 +68,7 @@ namespace PlebBot.Services.Chart
 
             foreach (var image in images)
             {
-                image.Dispose();
+                image?.Dispose();
             }
 
             return Task.FromResult(result);
