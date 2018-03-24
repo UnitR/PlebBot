@@ -49,6 +49,7 @@ namespace PlebBot
                 context.Channel.SendMessageAsync(result.ErrorReason);
         }
 
+
         private async Task HandleJoinGuildAsync(SocketGuild guild)
         {
             if (guild == null) return;

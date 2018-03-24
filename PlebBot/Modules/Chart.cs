@@ -41,20 +41,13 @@ namespace PlebBot.Modules
             }
 
             var imageBytes = await httpClient.GetByteArrayAsync(chartLink);
-            try
-            {
-                var user = await FindUserAsync();
-                if (user == null)
-                    await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
-                else
-                    await userRepo.UpdateFirst("Chart", imageBytes, $"\"DiscordId\" = {(long) Context.User.Id}");
-                await Success("Successfully saved the chart.");
-            }
-            catch (NpgsqlException ex)
-            {
-                if (Context.Client.GetChannel(417956085253668864) is ISocketMessageChannel dev)
-                    await dev.SendMessageAsync($"<@164102776035475458> aaaaaaaaaaaaaa\n{ex.Message}");
-            }
+            var user = await FindUserAsync();
+            if (user == null)
+                await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
+            else
+                await userRepo.UpdateFirst("Chart", imageBytes, $"\"DiscordId\" = {(long) Context.User.Id}");
+
+            await Success("Successfully saved the chart.");
         }
 
         [Command(RunMode = RunMode.Async)]
@@ -91,6 +84,8 @@ namespace PlebBot.Modules
             public async Task Top(ChartType type, string span, 
                 [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size)
             {
+                if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+
                 var user = await FindUserAsync();
                 if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
 
