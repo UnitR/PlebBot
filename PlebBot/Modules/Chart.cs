@@ -84,6 +84,8 @@ namespace PlebBot.Modules
             public async Task Top(ChartType type, string span, 
                 [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size)
             {
+                if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+
                 var user = await FindUserAsync();
                 if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
 
