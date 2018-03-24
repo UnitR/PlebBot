@@ -51,6 +51,7 @@ namespace PlebBot.Services.Chart
                 var i = 1;
                 foreach (var image in images)
                 {
+                    if (image == null) continue;
                     canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
                     offset += images[i].Width;
                     if (i == chartSize)
