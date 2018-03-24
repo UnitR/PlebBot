@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -35,7 +36,8 @@ namespace PlebBot.Services.Chart
             var images = new List<SKBitmap>(chartSize * chartSize);
             byte[] result;
 
-            images.AddRange(imageDictionary.Select(image => SKBitmap.Decode(image.Value)));
+            images.AddRange(
+                from image in imageDictionary where image.Value != null select SKBitmap.Decode(image.Value));
 
             var height = images[0].Height * chartSize;
             var width = images[0].Width * chartSize;
@@ -93,12 +95,20 @@ namespace PlebBot.Services.Chart
 
             for (var i = 0; i < response.Count; i++)
             {
-                var url = response[i].image[2]["#text"] ?? null;
+                string url = null;
                 byte[] art = null;
-                if (url != null)
+
+                for (var j = 2; j >= 0; j--)
                 {
-                    art = await httpClient.GetByteArrayAsync(url.ToString());
+                    url = response[i].image[j]["#text"].ToString();
+                    if (!string.IsNullOrEmpty(url)) break;
                 }
+
+                if (!String.IsNullOrEmpty(url))
+                {
+                    art = await httpClient.GetByteArrayAsync(url);
+                }
+
                 var name = new StringBuilder();
                 name.Append($" {response[i].name} ");
                 if (response[i].artist != null) name.Append($"\n {response[i].artist.name} ");

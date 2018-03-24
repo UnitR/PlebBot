@@ -40,7 +40,10 @@ namespace PlebBot.Modules
         [Command("fm set", RunMode = RunMode.Async)]
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
-            => await lastFm.SaveUserAsync(username, Context.User.Id);
+        {
+            await lastFm.SaveUserAsync(username, Context.User.Id);
+            await Success("last.fm username saved.");
+        } 
 
         [Command("fm top artists", RunMode = RunMode.Async)]
         [Summary("Get the top artists for a user")]
