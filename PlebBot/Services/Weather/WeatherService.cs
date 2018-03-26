@@ -78,20 +78,23 @@ namespace PlebBot.Services.Weather
             var kmh = (observation.wind_kph != 0) ? $"{observation.wind_kph} km/h" : "";
             var mph = (observation.wind_mph != 0) ? $"({observation.wind_mph} mph)" : "";
 
-            string windDir = observation.wind_dir.ToString().ToLowerInvariant();
+            string windDir = observation.wind_dir.ToString();
             windDir = await DetermineWind(windDir);
             var windText = 
                 (windDir != String.Empty && (kmh != String.Empty || mph != String.Empty)) ? 
-                $"Moving {windDir} at {kmh} {mph}" : "Calm";
+                $"{windDir} at {kmh} {mph}" : "Calm";
+
+            string iconUrl = observation.icon_url.ToString();
+            iconUrl = "https://icons.wxug.com/i/c/b" + iconUrl.Substring(iconUrl.LastIndexOf('/'));
 
             embed.WithTitle($"Current weather in {observation.display_location.full}");
             embed.WithUrl(observation.forecast_url.ToString());
-            embed.WithThumbnailUrl($"https://icons.wxug.com/i/c/b/{observation.icon}.gif");
+            embed.WithThumbnailUrl(iconUrl);
             embed.AddInlineField(
                 "Weather Condition:",
-                $"{observation.weather} | Feels like " +
-                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
+                $"{observation.weather} |  " +
                 $"Actual: {observation.temp_c}°C ({observation.temp_f}°F)\n" +
+                $"Feels like: {observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
                 $"High: {forecast.high.celsius}°C ({forecast.high.fahrenheit}°F) | " +
                 $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)");
             embed.AddInlineField("Wind:", windText);
@@ -142,34 +145,34 @@ namespace PlebBot.Services.Weather
                 case Directions.NNW:
                 case Directions.N:
                 case Directions.NNE:
-                    windDir = "north";
+                    windDir = "North";
                     break;
                 case Directions.NE:
-                    windDir = "northeast";
+                    windDir = "Northeast";
                     break;
                 case Directions.ENE:
                 case Directions.E:
                 case Directions.ESE:
-                    windDir = "east";
+                    windDir = "East";
                     break;
                 case Directions.SE:
-                    windDir = "southeast";
+                    windDir = "Southeast";
                     break;
                 case Directions.SSE:
                 case Directions.S:
                 case Directions.SSW:
-                    windDir = "south";
+                    windDir = "South";
                     break;
                 case Directions.SW:
-                    windDir = "southwest";
+                    windDir = "Southwest";
                     break;
                 case Directions.WSW:
                 case Directions.W:
                 case Directions.WNW:
-                    windDir = "west";
+                    windDir = "West";
                     break;
                 case Directions.NW:
-                    windDir = "northwest";
+                    windDir = "Northwest";
                     break;
                 default:
                     windDir = "";
