@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using System.IO;
 using System.Linq;
-using Discord.WebSocket;
-using Npgsql;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repositories;
 using PlebBot.Services.Chart;
@@ -41,6 +39,13 @@ namespace PlebBot.Modules
             }
 
             var imageBytes = await httpClient.GetByteArrayAsync(chartLink);
+
+            if (imageBytes.Length == 0)
+            {
+                await Error("No chart image provided");
+                return;
+            }
+
             var user = await FindUserAsync();
             if (user == null)
                 await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
