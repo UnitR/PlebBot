@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
@@ -23,7 +24,7 @@ namespace PlebBot.Data.Repository
         public Task<int> Add(string column, object value)
             => Add(new[] {column}, new[] {value});
 
-        public async Task<int> Add(string[] columns, object[] values)
+        public async Task<int> Add(IEnumerable<string> columns, IEnumerable<object> values)
         {
             var sql = new StringBuilder($"insert into public.\"{table}\" (");
             foreach (var column in columns)
@@ -33,10 +34,11 @@ namespace PlebBot.Data.Repository
             sql.Remove(sql.Length - 1, 1);
             sql.Append(") values (");
             valuesDict = new Dictionary<string, object>();
-            for (var i = 0; i < values.Length; i++)
+            var valuesArr = values.ToArray();
+            for (var i = 0; i < valuesArr.Length; i++)
             {
                 sql.Append($"@val{i},");
-                valuesDict.Add($"val{i}", values[i]);
+                valuesDict.Add($"val{i}", valuesArr[i]);
             }
             sql.Remove(sql.Length - 1, 1);
             sql.Append(")");
@@ -126,7 +128,8 @@ namespace PlebBot.Data.Repository
         public Task<int> UpdateFirst(string column, object value, string findColumn, object findValue)
             => UpdateFirst(new[] {column}, new[] {value}, findColumn, findValue);
 
-        public async Task<int> UpdateFirst(string[] columns, object[] values, string findColumn, object findValue)
+        public async Task<int> UpdateFirst(
+            IEnumerable<string> columns, IEnumerable<object> values, string findColumn, object findValue)
         {
             var sql = new StringBuilder(await BuildUpdateSql(columns, values));
             var result = 0;
@@ -135,7 +138,7 @@ namespace PlebBot.Data.Repository
                 dynamic entity = await FindFirst(findColumn, findValue);
                 if (entity != null)
                 {
-                    sql.Append($" where \"{findColumn}\" = @id");
+                    sql.Append(" where \"Id\" = @id");
                     valuesDict.Add("id", entity.Id);
                     result = await conn.ExecuteAsync(sql.ToString(), valuesDict);
                 }
@@ -148,7 +151,8 @@ namespace PlebBot.Data.Repository
         public Task<int> UpdateAll(string column, object value, string findColumn, object findValue)
             => UpdateAll(new[] {column}, new[] {value}, findColumn, findValue);
 
-        public async Task<int> UpdateAll(string[] columns, object[] values, string findColumn, object findValue)
+        public async Task<int> UpdateAll(
+            IEnumerable<string> columns, IEnumerable<object> values, string findColumn, object findValue)
         {
             var sql = new StringBuilder(await BuildUpdateSql(columns, values));
             sql.Append($" where \"{findColumn}\" = @findValue");
@@ -164,14 +168,17 @@ namespace PlebBot.Data.Repository
             return result;
         }
 
-        private Task<string> BuildUpdateSql(IReadOnlyList<string> columns, IReadOnlyList<object> values)
+        private Task<string> BuildUpdateSql(IEnumerable<string> columns, IEnumerable<object> values)
         {
+            var columnsArr = columns.ToArray();
+            var valuesArr = values.ToArray();
             var sql = new StringBuilder($"update \"{table}\" set ");
             valuesDict = new Dictionary<string, object>();
-            for (var i = 0; i < columns.Count; i++)
+
+            for (var i = 0; i < columnsArr.Length; i++)
             {
-                sql.Append($"\"{columns[i]}\" = @val{i},");
-                valuesDict.Add($"val{i}", values[i]);
+                sql.Append($"\"{columnsArr[i]}\" = @val{i},");
+                valuesDict.Add($"val{i}", valuesArr[i]);
             }
             sql.Remove(sql.Length - 1, 1);
 

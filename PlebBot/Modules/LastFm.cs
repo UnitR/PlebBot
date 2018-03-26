@@ -41,7 +41,7 @@ namespace PlebBot.Modules
         [Summary("Link your last.fm username to your profile")]
         public async Task SaveUser([Summary("Your last.fm username")] string username)
         {
-            await lastFm.SaveUserAsync(username, Context.User.Id);
+            await SaveUserData("LastFm", username);
             await Success("last.fm username saved.");
         } 
 

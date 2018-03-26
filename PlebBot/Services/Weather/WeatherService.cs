@@ -5,8 +5,6 @@ using Discord;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using PlebBot.Data.Models;
-using PlebBot.Data.Repository;
 
 namespace PlebBot.Services.Weather
 {
@@ -14,15 +12,13 @@ namespace PlebBot.Services.Weather
     {
         private readonly HttpClient httpClient;
         private readonly string apiAddress;
-        private readonly Repository<User> userRepo;
         private EmbedBuilder embed;
 
-        public WeatherService(HttpClient client, Repository<User> repo)
+        public WeatherService(HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             apiAddress = $"http://api.wunderground.com/api/{config["tokens:weather_key"]}";
             httpClient = client;
-            userRepo = repo;
             embed = new EmbedBuilder().WithFooter(
                 "Weather data provided by the Weather Underground",
                 "https://icons.wxug.com/logos/PNG/wundergroundLogo_4c_rev.png");
@@ -181,31 +177,6 @@ namespace PlebBot.Services.Weather
             }
 
             return Task.FromResult(windDir);
-        }
-
-        public async Task<EmbedBuilder> SaveLocation(string location, long userId)
-        {
-            if (location == null)
-            {
-                embed = WeatherResponse.NoLocation();
-                return embed;
-            }
-
-            location = location.Substring(4);
-            var user = await userRepo.FindByDiscordId(userId);
-            if (user != null)
-            {
-                await userRepo.UpdateFirst("City", location, "Id", user.Id);
-            }
-            else
-            {
-                string[] columns = {"DiscordId", "City"};
-                object[] values = {userId, location};
-                await userRepo.Add(columns, values);
-            }
-
-            embed = WeatherResponse.SuccessfulLocationSet();
-            return embed;
         }
     }
 

@@ -6,7 +6,7 @@ namespace PlebBot.Data.Repository
     public interface IRepository<T>
     {
         //Add a new record to the database
-        Task<int> Add(string[] columns, dynamic[] values);
+        Task<int> Add(IEnumerable<string> columns, IEnumerable<object> values);
 
         //Find the first matching record from the database
         Task<T> FindFirst(string column, object value);
@@ -21,9 +21,11 @@ namespace PlebBot.Data.Repository
         Task<int> DeleteAll(string column, object value);
 
         //Update the first record in the database
-        Task<int> UpdateFirst(string[] columns, object[] values, string findColumn, object findValue);
+        Task<int> UpdateFirst(
+            IEnumerable<string> columns, IEnumerable<object> values, string findColumn, object findValue);
 
         //Update all matching records from the database
-        Task<int> UpdateAll(string[] columns, object[] values, string findColumn, object findValue);
+        Task<int> UpdateAll(
+            IEnumerable<string> columns, IEnumerable<object> values, string findColumn, object findValue);
     }
 }

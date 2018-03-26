@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using System.IO;
 using System.Linq;
-using PlebBot.Data.Models;
-using PlebBot.Data.Repository;
 using PlebBot.Services.Chart;
 using PlebBot.TypeReaders;
 
@@ -15,13 +13,11 @@ namespace PlebBot.Modules
     public class Chart : BaseModule
     {
         private readonly HttpClient httpClient;
-        private readonly Repository<User> userRepo;
         private readonly ChartService chartService;
 
-        public Chart(HttpClient client, Repository<User> repo, ChartService service)
+        public Chart(HttpClient client, ChartService service)
         {
             httpClient = client;
-            userRepo = repo;
             chartService = service;
         }
 
@@ -46,13 +42,8 @@ namespace PlebBot.Modules
                 return;
             }
 
-            var user = await FindUserAsync();
-            if (user == null)
-                await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
-            else
-                await userRepo.UpdateFirst("Chart", imageBytes, "DiscordId", (long) Context.User.Id);
-
-            await Success("Successfully saved the chart.");
+            await SaveUserData("Chart", imageBytes);
+            await Success("Chart saved.");
         }
 
         [Command(RunMode = RunMode.Async)]
@@ -61,7 +52,7 @@ namespace PlebBot.Modules
         {
             if (!await Preconditions.Preconditions.InCharposting(Context)) return;
 
-            var user = await userRepo.FindFirst("DiscordId", Context.User.Id);
+            var user = await FindUserAsync();
             if (user?.Chart == null)
             {
                 await Error("You haven't saved a chart to your profile.");
@@ -72,15 +63,14 @@ namespace PlebBot.Modules
             {
                 await Context.Channel.SendFileAsync(stream, $"{Context.User.Username}_chart.png",
                     $"{Context.User.Mention}'s chart:");
-
             }
         }
 
         [Group("top")]
         public class TopCharts : Chart
         {
-            public TopCharts(HttpClient client, Repository<User> repo, ChartService service)
-                : base(client, repo, service)
+            public TopCharts(HttpClient client, ChartService service)
+                : base(client, service)
             {
             }
 

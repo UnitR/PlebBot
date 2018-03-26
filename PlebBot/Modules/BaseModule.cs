@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -8,7 +10,6 @@ using PlebBot.Data.Repository;
 
 namespace PlebBot.Modules
 {
-    //TODO: Save data method for handling updating and saving [set] commands
     public class BaseModule : CommandCacheModuleBase<SocketCommandContext>
     {
         private IDisposable typing;
@@ -36,6 +37,29 @@ namespace PlebBot.Modules
             var repo = new Repository<User>();
             var user = await repo.FindByDiscordId((long) Context.User.Id);
             return user;
+        }
+
+        protected async Task SaveUserData(string column, object value)
+            => await SaveUserData(new[] {column}, new[] {value});
+
+        protected async Task SaveUserData(IEnumerable<string> columns, IEnumerable<object> values)
+        {
+            var userRepo = new Repository<User>();
+            var userId = (long) Context.User.Id;
+
+            var user = await userRepo.FindByDiscordId(userId);
+            if (user != null)
+            {
+                await userRepo.UpdateFirst(columns, values, "Id", user.Id);
+            }
+            else
+            {
+                var columnsList = columns.ToList();
+                columnsList.Add("DiscordId");
+                var valuesList = values.ToList();
+                valuesList.Add(userId);
+                await userRepo.Add(columnsList, valuesList);
+            }
         }
 
         protected override void BeforeExecute(CommandInfo command)

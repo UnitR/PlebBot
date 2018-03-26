@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using Discord;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using PlebBot.Data.Models;
-using PlebBot.Data.Repository;
 using PlebBot.Services.Chart;
 
 namespace PlebBot.Services
@@ -15,16 +13,14 @@ namespace PlebBot.Services
     public class LastFmService
     {
         private readonly string lastFmKey;
-        private readonly Repository<User> userRepo;
         private readonly HttpClient httpClient;
         private const string NotFound = "last.fm user not found.";
         private readonly EmbedBuilder errorEmbed = new EmbedBuilder().WithTitle("Error").WithColor(Color.DarkRed);
 
-        public LastFmService(Repository<User> repo, HttpClient client)
+        public LastFmService(HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             lastFmKey = config["tokens:lastfm_key"];
-            userRepo = repo;
             httpClient = client;
         }
 
@@ -115,27 +111,6 @@ namespace PlebBot.Services
             var ytService = new YtService();
             var link = await ytService.GetVideoLinkAsync($"{track.artist["#text"]} {track.name}");
             return link;
-        }
-
-        public async Task<EmbedBuilder> SaveUserAsync(string username, ulong userId)
-        {
-            if (username == null) return errorEmbed.WithDescription("You must provide a username.");
-            if (!await CheckIfUserExistsAsync(username)) return errorEmbed.WithTitle(NotFound);
-
-            var user = await userRepo.FindByDiscordId((long) userId);
-            var embed =
-                new EmbedBuilder().WithTitle("Success")
-                    .WithDescription("Succesfully set your last.fm username.");
-            if (user != null)
-            {
-                await userRepo.UpdateFirst("LastFm", username, "Id", user.Id);
-                return embed;
-            }
-            string[] columns = {"DiscordId", "LastFm"};
-            object[] values = {(long) userId, username};
-            await userRepo.Add(columns, values);
-
-            return embed;
         }
 
         public async Task<dynamic> GetTopAlbumsAsync(string username, string span, int limit)
