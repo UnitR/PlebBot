@@ -34,7 +34,6 @@ namespace PlebBot.Services.Chart
         private static Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
         {
             var images = new List<SKBitmap>(imageDictionary.Count);
-            byte[] result;
 
             images.AddRange(
                 from image in imageDictionary where image.Value.Length != 0 select SKBitmap.Decode(image.Value));
@@ -63,7 +62,7 @@ namespace PlebBot.Services.Chart
                 }
                 i++;
             }
-            result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
+            var result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
 
             tempSurface.Dispose();
             foreach (var image in images)

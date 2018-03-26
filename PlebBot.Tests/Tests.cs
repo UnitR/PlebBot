@@ -4,12 +4,12 @@ using Dapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlebBot.Data;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 
 namespace PlebBot.Tests
 {
     [TestClass]
-    public class DapperTests
+    public class Tests
     {
         [TestMethod]
         public void GetEntity()
@@ -89,21 +89,18 @@ namespace PlebBot.Tests
         [TestMethod]
         public void RepositoryFindFirst()
         {
-            const string condition = "\"DiscordId\" = 164102776035475458";
-            const long discordId = 164102776035475458;
-            var userRepo = new Repository<User>();
-            var result = userRepo.FindFirst(condition).Result;
+            var roleRepo = new Repository<Role>();
+            var result = roleRepo.FindFirst("Name", "Newsletter".ToLower()).Result;
 
-            Assert.AreEqual(discordId, result.DiscordId, "Different discord ids.");
+            Assert.AreEqual("Newsletter", result.Name, "Different role names.");
         }
 
         [TestMethod]
         public void RepositoryFindAll()
         {
-            const string condition = "\"Id\" = 1";
             const int id = 1;
             var userRepo = new Repository<User>();
-            var result = userRepo.FindAll(condition).Result;
+            var result = userRepo.FindAll("Id", 1).Result;
 
             Assert.AreEqual(result.First().Id, id, "IDs don't match.");
         }
@@ -111,19 +108,17 @@ namespace PlebBot.Tests
         [TestMethod]
         public void RepositoryDeleteFirst()
         {
-            const string condition = "\"Id\" = 18";
             var userRepo = new Repository<User>();
-            var result = userRepo.DeleteFirst(condition).Result;
+            var result = userRepo.DeleteFirst("Id", 1).Result;
 
-            Assert.AreEqual(result, 1, "Incorrect number of rows affected.");
+            Assert.AreEqual(1, result, "Incorrect number of rows affected.");
         }
 
         [TestMethod]
         public void RepositoryDeleteAll()
         {
-            const string condition = "\"DiscordId\" = 369907714819751938";
             var userRepo = new Repository<User>();
-            var result = userRepo.DeleteAll(condition).Result;
+            var result = userRepo.DeleteAll("DiscordId", 369907714819751938).Result;
 
             Assert.AreEqual(result, 4, "Incorrect number of rows affected.");
         }
@@ -133,9 +128,8 @@ namespace PlebBot.Tests
         {
             object[] values = {"last.fm", "rym"};
             string[] columns = {"LastFm", "Rym"};
-            const string condition = "\"Id\" = 1";
             var userRepo = new Repository<User>();
-            var result = userRepo.UpdateFirst(columns, values, condition).Result;
+            var result = userRepo.UpdateFirst(columns, values, "Id", 1).Result;
 
             Assert.AreEqual(result, 1, "Incorrect number of rows affected.");
         }
@@ -144,11 +138,10 @@ namespace PlebBot.Tests
         public void FindRole()
         {
             var roleRepo = new Repository<Role>();
-            const string role = "Newsletter";
-            var condition = $"lower(\"Name\") = \'{role.ToLower()}\'";
-            var roleResult = roleRepo.FindFirst(condition).Result;
+            const string role = "newsletter";
+            var roleResult = roleRepo.FindFirst("Name", role.ToLowerInvariant()).Result;
 
-            Assert.AreEqual(role, roleResult.Name, "Incorrect role fetched.");
+            Assert.AreEqual(role, roleResult.Name.ToLowerInvariant(), "Incorrect role fetched.");
         }
     }
 }

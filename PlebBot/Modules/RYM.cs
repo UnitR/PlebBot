@@ -2,7 +2,7 @@
 using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 
 namespace PlebBot.Modules
 {
@@ -26,7 +26,7 @@ namespace PlebBot.Modules
                 var user = await FindUserAsync();
                 if (user != null)
                 {
-                    await userRepo.UpdateFirst("Rym", username, $"\"Id\" = {user.Id}");
+                    await userRepo.UpdateFirst("Rym", username, "Id", user.Id);
                 }
                 else
                 {
@@ -47,9 +47,7 @@ namespace PlebBot.Modules
         [Summary("Send a link to your Rate Your Music profile")]
         public async Task LinkProfile()
         {
-            var userId = (long) Context.User.Id;
-            var condition = $"\"DiscordId\" = {userId}";
-            var user = await userRepo.FindFirst(condition);
+            var user = await userRepo.FindFirst("DiscordId", (long) Context.User.Id);
 
             if (user?.Rym == null)
             {

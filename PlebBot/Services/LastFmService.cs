@@ -7,7 +7,7 @@ using Discord;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 using PlebBot.Services.Chart;
 
 namespace PlebBot.Services
@@ -122,20 +122,17 @@ namespace PlebBot.Services
             if (username == null) return errorEmbed.WithDescription("You must provide a username.");
             if (!await CheckIfUserExistsAsync(username)) return errorEmbed.WithTitle(NotFound);
 
-            var findCondition = $"\"DiscordId\" = {(long) userId}";
-            var user = await userRepo.FindFirst(findCondition);
+            var user = await userRepo.FindByDiscordId((long) userId);
             var embed =
                 new EmbedBuilder().WithTitle("Success")
                     .WithDescription("Succesfully set your last.fm username.");
             if (user != null)
             {
-                var updateCondition = $"\"Id\" = {user.Id}";
-                await userRepo.UpdateFirst("LastFm", username, updateCondition);
-
+                await userRepo.UpdateFirst("LastFm", username, "Id", user.Id);
                 return embed;
             }
             string[] columns = {"DiscordId", "LastFm"};
-            object[] values = {(long) userId};
+            object[] values = {(long) userId, username};
             await userRepo.Add(columns, values);
 
             return embed;

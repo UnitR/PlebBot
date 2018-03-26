@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 using PlebBot.Services;
 using PlebBot.Services.Chart;
 
@@ -178,8 +178,7 @@ namespace PlebBot.Modules
 
         private async Task<string> GetUsername(ulong userId)
         {
-            var condition = $"\"DiscordId\" = {(long) userId}";
-            var user = await userRepo.FindFirst(condition);
+            var user = await userRepo.FindByDiscordId((long) userId);
             return user?.LastFm;
         }
     }

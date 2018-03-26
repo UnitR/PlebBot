@@ -5,7 +5,7 @@ using Discord.Commands;
 using System.IO;
 using System.Linq;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 using PlebBot.Services.Chart;
 using PlebBot.TypeReaders;
 
@@ -50,7 +50,7 @@ namespace PlebBot.Modules
             if (user == null)
                 await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
             else
-                await userRepo.UpdateFirst("Chart", imageBytes, $"\"DiscordId\" = {(long) Context.User.Id}");
+                await userRepo.UpdateFirst("Chart", imageBytes, "DiscordId", (long) Context.User.Id);
 
             await Success("Successfully saved the chart.");
         }
@@ -61,8 +61,7 @@ namespace PlebBot.Modules
         {
             if (!await Preconditions.Preconditions.InCharposting(Context)) return;
 
-            var condition = $"\"DiscordId\" = {(long) Context.User.Id}";
-            var user = await userRepo.FindFirst(condition);
+            var user = await userRepo.FindFirst("DiscordId", Context.User.Id);
             if (user?.Chart == null)
             {
                 await Error("You haven't saved a chart to your profile.");

@@ -6,7 +6,7 @@ using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 
 namespace PlebBot.Services.Weather
 {
@@ -192,11 +192,10 @@ namespace PlebBot.Services.Weather
             }
 
             location = location.Substring(4);
-            var condition = $"\"DiscordId\" = {userId}";
-            var user = await userRepo.FindFirst(condition);
+            var user = await userRepo.FindByDiscordId(userId);
             if (user != null)
             {
-                await userRepo.UpdateFirst("City", location, condition);
+                await userRepo.UpdateFirst("City", location, "Id", user.Id);
             }
             else
             {

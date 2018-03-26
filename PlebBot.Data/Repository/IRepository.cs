@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace PlebBot.Data.Repositories
+namespace PlebBot.Data.Repository
 {
     public interface IRepository<T>
     {
@@ -9,21 +9,21 @@ namespace PlebBot.Data.Repositories
         Task<int> Add(string[] columns, dynamic[] values);
 
         //Find the first matching record from the database
-        Task<T> FindFirst(string condition);
+        Task<T> FindFirst(string column, object value);
 
         //Fid all matching records from the database
-        Task<IEnumerable<T>> FindAll(string condition);
+        Task<IEnumerable<T>> FindAll(string column, object value);
 
         //Delete the first matching record from the database
-        Task<int> DeleteFirst(string condition);
+        Task<int> DeleteFirst(string column, object value);
 
         //Delete all matching records from the database
-        Task<int> DeleteAll(string condition);
+        Task<int> DeleteAll(string column, object value);
 
         //Update the first record in the database
-        Task<int> UpdateFirst(string[] columns, object[] values, string condition);
+        Task<int> UpdateFirst(string[] columns, object[] values, string findColumn, object findValue);
 
         //Update all matching records from the database
-        Task<int> UpdateAll(string[] columns, object[] values, string condition);
+        Task<int> UpdateAll(string[] columns, object[] values, string findColumn, object findValue);
     }
 }

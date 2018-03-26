@@ -4,7 +4,7 @@ using Discord;
 using Discord.Commands;
 using PlebBot.Caches.CommandCache;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repositories;
+using PlebBot.Data.Repository;
 
 namespace PlebBot.Modules
 {
@@ -34,10 +34,7 @@ namespace PlebBot.Modules
         protected async Task<User> FindUserAsync()
         {
             var repo = new Repository<User>();
-            var id = Context.User.Id;
-            var condition = $"\"DiscordId\" = {id}";
-            var user = await repo.FindFirst(condition);
-
+            var user = await repo.FindByDiscordId((long) Context.User.Id);
             return user;
         }
 
