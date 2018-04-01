@@ -34,16 +34,23 @@ namespace PlebBot.Modules
                     chartLink = Context.Message.Attachments.First().Url;
             }
 
-            var imageBytes = await httpClient.GetByteArrayAsync(chartLink);
-
-            if (imageBytes.Length == 0)
+            if (!(Uri.IsWellFormedUriString(chartLink, UriKind.Absolute)) || String.IsNullOrEmpty(chartLink))
             {
-                await Error("No chart image provided");
+                await Error("No proper chart or link provided. Try again.");
                 return;
             }
 
-            await SaveUserData("Chart", imageBytes);
-            await Success("Chart saved.");
+            byte[] imageBytes;
+            try
+            {
+                imageBytes = await httpClient.GetByteArrayAsync(chartLink);
+                await SaveUserData("Chart", imageBytes);
+                await Success("Chart saved.");
+            }
+            catch (InvalidOperationException)
+            {
+                await Error("Your chart could not be downloaded. Check the chart image or link.");
+            }
         }
 
         [Command(RunMode = RunMode.Async)]
@@ -84,6 +91,14 @@ namespace PlebBot.Modules
                 if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
 
                 var result = await chartService.GetChartAsync(size, type, user.LastFm, span);
+
+                if (result == null)
+                {
+                    await Error(
+                        "Something went wrong obtaining the chart information. Check the given parameters and try again");
+                    return;
+                }
+                
                 using (Stream stream = new MemoryStream(result))
                 {
                     await Context.Channel.SendFileAsync(
