@@ -113,7 +113,7 @@ namespace PlebBot.Services
             return link;
         }
 
-        public async Task<dynamic> GetTopAlbumsAsync(string username, string span, int limit)
+        private async Task<dynamic> GetTopAlbumsAsync(string username, string span, int limit)
         {
             var call = $"http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user={username}" +
                        $"&api_key={lastFmKey}&period={span}&limit={limit}&format=json";
@@ -121,7 +121,7 @@ namespace PlebBot.Services
             return response.topalbums.album.Count <= 0 ? null : response;
         }
 
-        public async Task<dynamic> GetTopArtistsAsync(string username, string span, int limit)
+        private async Task<dynamic> GetTopArtistsAsync(string username, string span, int limit)
         {
             var call = $"http://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user={username}" +
                        $"&api_key={lastFmKey}&period={span}&limit={limit}&format=json";
@@ -129,7 +129,7 @@ namespace PlebBot.Services
             return response.topartists.artist.Count <= 0 ? null : response;
         }
 
-        public async Task<dynamic> GetTopTracksAsync(string username, string span, int limit)
+        private async Task<dynamic> GetTopTracksAsync(string username, string span, int limit)
         {
             var call =
                 $"http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user={username}&period={span}" +
@@ -175,22 +175,35 @@ namespace PlebBot.Services
             return Task.FromResult(span);
         }
 
-        public Task<string> FormatSpan(string span)
+        public static Task<string> FormatSpan(string span)
         {
             switch (span)
             {
                 case "1month":
+                case "month":
                     span = "month";
                     break;
                 case "3month":
                 case "6month":
                     span = $"{span.First()} {span.Substring(1)}s";
                     break;
+                case "3months":
+                case "6months":
+                    span = $"{span.First()} {span.Substring(1)}";
+                    break;
                 case "7day":
+                case "week":
                     span = "week";
                     break;
+                case "7days":
+                    span = $"{span.First()} {span.Substring(1)}";
+                    break;
                 case "12month":
+                case "12months":
                     span = "year";
+                    break;
+                default:
+                    span = "overall";
                     break;
             }
             return Task.FromResult(new CultureInfo("en-US").TextInfo.ToTitleCase(span));
@@ -213,18 +226,26 @@ namespace PlebBot.Services
             switch (span)
             {
                 case "7day":
+                case "week":
                     offset = DateTimeOffset.UtcNow.AddDays(-7).ToUnixTimeSeconds();
                     break;
                 case "1month":
+                case "month":
                     offset = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
                     break;
                 case "3month":
+                case "3months":
+                case "quarter":
                     offset = DateTimeOffset.UtcNow.AddDays(-91).ToUnixTimeSeconds();
                     break;
                 case "6month":
+                case "6months":
+                case "half":
                     offset = DateTimeOffset.UtcNow.AddDays(-182).ToUnixTimeSeconds();
                     break;
                 case "12month":
+                case "12months":
+                case "year":
                     offset = DateTimeOffset.UtcNow.AddDays(-365).ToUnixTimeSeconds();
                     break;
             }
@@ -232,7 +253,7 @@ namespace PlebBot.Services
             var call = "http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" +
                         $"{username}&from={offset}&to={now}&api_key={lastFmKey}&format=json";
             var response = await GetLastFmData(call);
-            var scrobbles = response.recenttracks["@attr"].total;
+            int scrobbles = response.recenttracks["@attr"].total;
 
             return $"[{String.Format("{0:n0}", scrobbles)} scrobbles total]";
         }

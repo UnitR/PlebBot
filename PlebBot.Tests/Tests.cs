@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using Dapper;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlebBot.Data;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repository;
+using PlebBot.Services;
 
 namespace PlebBot.Tests
 {
@@ -142,6 +144,16 @@ namespace PlebBot.Tests
             var roleResult = roleRepo.FindFirst("Name", role.ToLowerInvariant()).Result;
 
             Assert.AreEqual(role, roleResult.Name.ToLowerInvariant(), "Incorrect role fetched.");
+        }
+
+        [TestMethod]
+        public void Total()
+        {
+            var service = new LastFmService(new HttpClient());
+            const string expected = "Week [804 scrobbles total]";
+            var actual = $"Week {service.TotalScrobblesAsync("week", "UnitR_").Result}";
+            
+            Assert.AreEqual(expected, actual, "Improperly formatted top.");
         }
     }
 }

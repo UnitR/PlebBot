@@ -14,13 +14,13 @@
         Large = 5
     }
 
-    public static class ChartSpan
+    public struct ChartSpan
     {
-        public static string Overall => "overall";
-        public static string Week => "7day";
-        public static string Month => "1month";
-        public static string Quarter => "3month";
-        public static string Half => "6month";
-        public static string Year => "12month";
+        public const string Overall = "overall";
+        public const string Week = "7day";
+        public const string Month = "1month";
+        public const string Quarter = "3month";
+        public const string Half = "6month";
+        public const string Year = "12month";
     }
 }

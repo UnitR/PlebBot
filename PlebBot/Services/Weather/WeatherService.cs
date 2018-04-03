@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace PlebBot.Services.Weather
 {
-    public class WeatherService
+    public partial class WeatherService
     {
         private readonly HttpClient httpClient;
         private readonly string apiAddress;
@@ -28,7 +28,7 @@ namespace PlebBot.Services.Weather
         {
             if (location == null)
             {
-                embed = WeatherResponse.NoLocation();
+                embed = await NoLocation();
                 return embed;
             }
 
@@ -39,7 +39,7 @@ namespace PlebBot.Services.Weather
             }
             catch (RuntimeBinderException)
             {
-                embed = WeatherResponse.NoInformation();
+                embed = await NoInformation();
             }
 
             return embed;

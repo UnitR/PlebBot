@@ -1,54 +1,56 @@
-﻿using Discord;
+﻿using System.Threading.Tasks;
+using Discord;
 
 namespace PlebBot.Services.Weather
 {
-    public static class WeatherResponse
+    public partial class WeatherService
     {
-        public static EmbedBuilder NotLinkedError()
+        public Task<EmbedBuilder> NotLinkedError()
         {
-            var embed = new EmbedBuilder()
+            var response = new EmbedBuilder()
             {
                 Title = "Error",
                 Description = "You haven't linked a location to your profile.",
                 Color = Color.DarkRed
             };
 
-            return embed;
+            return Task.FromResult(response);
         }
 
-        public static EmbedBuilder NoInformation()
+        public Task<EmbedBuilder> NoInformation()
         {
-            var embed = new EmbedBuilder()
+            var response = new EmbedBuilder()
             {
                 Title = "Error",
                 Description = "No weather information was found for the given location.",
                 Color = Color.DarkRed
             };
 
-            return embed;
+            return Task.FromResult(response);
         }
 
-        public static EmbedBuilder NoLocation()
+        public Task<EmbedBuilder> NoLocation()
         {
-            var embed = new EmbedBuilder()
+            var response = new EmbedBuilder()
             {
                 Title = "Error",
                 Description = "No location provided.",
                 Color = Color.DarkRed
             };
 
-            return embed;
+            return Task.FromResult(response);
         }
 
-        public static EmbedBuilder SuccessfulLocationSet()
+        public Task<EmbedBuilder> SuccessfulLocationSet()
         {
-            var embed = new EmbedBuilder()
+            var response = new EmbedBuilder()
             {
                 Title = "Success",
                 Description = "Successfully set your location.",
                 Color = Color.DarkGreen
             };
-            return embed;
+            
+            return Task.FromResult(response);
         }
     }
 }

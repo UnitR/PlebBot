@@ -140,14 +140,15 @@ namespace PlebBot.Modules
                     foreach (var album in response.topalbums.album)
                     {
                         list += $"{i}. {album.artist.name} - *{album.name}* " +
-                                $"[{String.Format("{0:n0}", album.playcount)} scrobbles]\n";
+                                $"[{String.Format("{0:n0}", (int) album.playcount)} scrobbles]\n";
                         i++;
                     }
                     break;
                 case ChartType.Artists:
                     foreach (var artist in response.topartists.artist)
                     {
-                        list += $"{i}. {artist.name} [{String.Format("{0:n0}", artist.playcount)} scrobbles]\n";
+                        list += $"{i}. {artist.name} [{String.Format("{0:n0}", (int) artist.playcount)} " +
+                                "scrobbles]\n";
                         i++;
                     }
                     break;
@@ -155,7 +156,7 @@ namespace PlebBot.Modules
                     foreach(var track in response.toptracks.track)
                     {
                         list += $"{i}. {track.artist.name} - *{track.name}* " +
-                                $"[{String.Format("{0:n0}", track.playcount)} scrobbles]\n";
+                                $"[{String.Format("{0:n0}", (int) track.playcount)} scrobbles]\n";
                         i++;
                     }
                     break;
@@ -168,7 +169,7 @@ namespace PlebBot.Modules
         private async Task<EmbedBuilder> BuildTopAsync(string list, string username, string chartType, string span)
         {
             var totalScrobbles = await lastFm.TotalScrobblesAsync(span, username);
-            span = await lastFm.FormatSpan(span);
+            span = await LastFmService.FormatSpan(span.ToLowerInvariant());
             var embed = new EmbedBuilder()
                 .WithTitle($"Top {chartType} for {username} - {span} {totalScrobbles}")
                 .WithDescription(list)
