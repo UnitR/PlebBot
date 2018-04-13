@@ -8,11 +8,11 @@ namespace PlebBot.Data
 {
     public class BotContext
     {
-        public static Func<DbConnection> OpenConnection = () => new NpgsqlConnection(Connection());
+        public static readonly Func<DbConnection> OpenConnection = () => new NpgsqlConnection(Connection());
 
         private static string Connection()
         {
-            IConfigurationRoot config = new ConfigurationBuilder()
+            var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("_config.json")
                 .Build();

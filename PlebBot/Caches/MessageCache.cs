@@ -23,16 +23,15 @@ namespace PlebBot.Caches
         }
 
         //Based on https://github.com/dotnet/corefx/blob/d0dc5fc099946adc1035b34a8b1f6042eddb0c75/src/System.Threading.Tasks.Parallel/src/SystemThreading/PlatformHelper.cs
-        private int DefaultConcurrencyLevel
+        private static int DefaultConcurrencyLevel
         {
             get
             {
-                int now = Environment.TickCount;
-                if (_sProcessorCount == 0 || (now - _sLastProcessorCountRefreshTicks) >= ProcessorCountRefreshIntervalMs)
-                {
-                    _sProcessorCount = Environment.ProcessorCount;
-                    _sLastProcessorCountRefreshTicks = now;
-                }
+                var now = Environment.TickCount;
+                if (_sProcessorCount != 0 && now - _sLastProcessorCountRefreshTicks < ProcessorCountRefreshIntervalMs)
+                    return _sProcessorCount;
+                _sProcessorCount = Environment.ProcessorCount;
+                _sLastProcessorCountRefreshTicks = now;
 
                 return _sProcessorCount;
             }

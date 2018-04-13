@@ -18,7 +18,7 @@ namespace PlebBot.Services
         public YtService()
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
-            service = new YouTubeService(new BaseClientService.Initializer()
+            service = new YouTubeService(new BaseClientService.Initializer
             {
                 ApiKey = config["tokens:yt_key"],
                 ApplicationName = GetType().ToString()
@@ -61,7 +61,7 @@ namespace PlebBot.Services
             return path;
         }
 
-        public async Task<Video> GetVideoAsync(string videoId, string videoName = "")
+        private async Task<Video> GetVideoAsync(string videoId, string videoName = "")
         {
             if (videoId == String.Empty)
             {

@@ -35,7 +35,7 @@ namespace PlebBot.Modules
                     .WithTitle("List of self-assignable roles:")
                     .WithColor(Color.Green);
                 var description = "";
-                int i = 1;
+                var i = 1;
                 foreach (var role in roles)
                 {
                     description += $"{i}. {role.Name}\n";

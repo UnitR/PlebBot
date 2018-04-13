@@ -34,16 +34,15 @@ namespace PlebBot.Modules
                     chartLink = Context.Message.Attachments.First().Url;
             }
 
-            if (!(Uri.IsWellFormedUriString(chartLink, UriKind.Absolute)) || String.IsNullOrEmpty(chartLink))
+            if (!Uri.IsWellFormedUriString(chartLink, UriKind.Absolute) || String.IsNullOrEmpty(chartLink))
             {
                 await Error("No proper chart or link provided. Try again.");
                 return;
             }
 
-            byte[] imageBytes;
             try
             {
-                imageBytes = await httpClient.GetByteArrayAsync(chartLink);
+                var imageBytes = await httpClient.GetByteArrayAsync(chartLink);
                 await SaveUserData("Chart", imageBytes);
                 await Success("Chart saved.");
             }

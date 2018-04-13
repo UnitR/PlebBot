@@ -9,7 +9,7 @@ namespace PlebBot.Caches.CommandCache
         where TCommandCache : ICommandCache<TCacheKey, TCacheValue>
         where TCommandContext : class, ICommandContext
     {
-        public TCommandCache Cache { get; set; }
+        private TCommandCache Cache { get; set; }
 
         protected override async Task<IUserMessage> ReplyAsync(string message, bool isTTS = false, Embed embed = null, RequestOptions options = null)
         {

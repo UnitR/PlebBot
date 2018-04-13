@@ -42,7 +42,7 @@ namespace PlebBot.Modules
         protected async Task SaveUserData(string column, object value)
             => await SaveUserData(new[] {column}, new[] {value});
 
-        protected async Task SaveUserData(IEnumerable<string> columns, IEnumerable<object> values)
+        private async Task SaveUserData(IEnumerable<string> columns, IEnumerable<object> values)
         {
             var userRepo = new Repository<User>();
             var userId = (long) Context.User.Id;

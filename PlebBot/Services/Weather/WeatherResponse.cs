@@ -5,9 +5,9 @@ namespace PlebBot.Services.Weather
 {
     public partial class WeatherService
     {
-        public Task<EmbedBuilder> NotLinkedError()
+        public static Task<EmbedBuilder> NotLinkedError()
         {
-            var response = new EmbedBuilder()
+            var response = new EmbedBuilder
             {
                 Title = "Error",
                 Description = "You haven't linked a location to your profile.",
@@ -17,9 +17,9 @@ namespace PlebBot.Services.Weather
             return Task.FromResult(response);
         }
 
-        public Task<EmbedBuilder> NoInformation()
+        public static Task<EmbedBuilder> NoInformation()
         {
-            var response = new EmbedBuilder()
+            var response = new EmbedBuilder
             {
                 Title = "Error",
                 Description = "No weather information was found for the given location.",
@@ -29,9 +29,9 @@ namespace PlebBot.Services.Weather
             return Task.FromResult(response);
         }
 
-        public Task<EmbedBuilder> NoLocation()
+        public static Task<EmbedBuilder> NoLocation()
         {
-            var response = new EmbedBuilder()
+            var response = new EmbedBuilder
             {
                 Title = "Error",
                 Description = "No location provided.",
@@ -41,9 +41,9 @@ namespace PlebBot.Services.Weather
             return Task.FromResult(response);
         }
 
-        public Task<EmbedBuilder> SuccessfulLocationSet()
+        public static Task<EmbedBuilder> SuccessfulLocationSet()
         {
-            var response = new EmbedBuilder()
+            var response = new EmbedBuilder
             {
                 Title = "Success",
                 Description = "Successfully set your location.",

@@ -19,7 +19,7 @@ namespace PlebBot.Modules
         [Command("help")]
         public async Task HelpAsync()
         {
-            var builder = new EmbedBuilder()
+            var builder = new EmbedBuilder
             {
                 Color = Color.Green,
                 Title = "Available commands:"
@@ -70,11 +70,7 @@ namespace PlebBot.Modules
         [Command("help")]
         public async Task HelpAsync(params string[] command)
         {
-            var cmd = "";
-            foreach (var item in command)
-            {
-                cmd += $"{item} ";
-            }
+            var cmd = command.Aggregate("", (current, item) => current + $"{item} ");
             cmd = cmd.Remove(cmd.Length - 1);
 
             var builder = new EmbedBuilder();
@@ -96,11 +92,8 @@ namespace PlebBot.Modules
 
                 if (matched.Parameters.Count > 0)
                 {
-                    parameters = "Parameters:\n";
-                    foreach (var item in matched.Parameters)
-                    {
-                        parameters += $"\t{item.Name} - *{item.Summary}*\n";
-                    }
+                    parameters = matched.Parameters.Aggregate("Parameters:\n", (current, item) 
+                        => current + $"\t{item.Name} - *{item.Summary}*\n");
                 }
 
                 builder.AddField(x =>

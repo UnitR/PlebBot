@@ -75,13 +75,13 @@ namespace PlebBot.Services.Weather
             var observation = response.current_observation;
             var forecast = response.forecast.simpleforecast.forecastday.First;
 
-            var kmh = (observation.wind_kph != 0) ? $"{observation.wind_kph} km/h" : "";
-            var mph = (observation.wind_mph != 0) ? $"({observation.wind_mph} mph)" : "";
+            var kmh = observation.wind_kph != 0 ? $"{observation.wind_kph} km/h" : "";
+            var mph = observation.wind_mph != 0 ? $"({observation.wind_mph} mph)" : "";
 
             string windDir = observation.wind_dir.ToString();
             windDir = await DetermineWind(windDir);
             var windText = 
-                (windDir != String.Empty && (kmh != String.Empty || mph != String.Empty)) ? 
+                windDir != String.Empty && (kmh != String.Empty || mph != String.Empty) ? 
                 $"{windDir} at {kmh} {mph}" : "Calm";
 
             string iconUrl = observation.icon_url.ToString();

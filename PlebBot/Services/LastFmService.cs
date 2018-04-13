@@ -25,7 +25,7 @@ namespace PlebBot.Services
         }
 
         public async Task<dynamic> GetTopAsync(
-            ChartType chart, int limit, string span = "", string username = "", ulong userId = 0)
+            ChartType chart, int limit, string span = "", string username = "")
         {
             if (!await CheckIfUserExistsAsync(username))
                 return errorEmbed.WithDescription(NotFound);
@@ -61,7 +61,7 @@ namespace PlebBot.Services
         }
 
         //show user's scrobbles
-        public async Task<EmbedBuilder> NowPlayingAsync(string username, ulong userId = 0)
+        public async Task<EmbedBuilder> NowPlayingAsync(string username)
         {
             if (!await CheckIfUserExistsAsync(username))
                 return errorEmbed.WithDescription(NotFound);
@@ -221,8 +221,8 @@ namespace PlebBot.Services
             var call = $"http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={username}" +
                        $"&api_key={lastFmKey}&format=json";
             var response = await GetLastFmData(call);
-            if (response.user != null) return true;
-            return false;
+
+            return response.user != null;
         }
 
         public async Task<string> TotalScrobblesAsync(string span, string username)

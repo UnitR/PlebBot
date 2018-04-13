@@ -42,7 +42,7 @@ namespace PlebBot.Modules
                 var user = await FindUserAsync();
                 if (user.City == null)
                 {
-                    embed = await service.NotLinkedError();
+                    embed = await WeatherService.NotLinkedError();
                     await ReplyAsync("", embed: embed.Build());
                     return;
                 }
@@ -54,7 +54,7 @@ namespace PlebBot.Modules
                 }
                 catch (RuntimeBinderException)
                 {
-                    embed = await service.NoInformation();
+                    embed = await WeatherService.NoInformation();
                 }
 
                 await ReplyAsync("", embed: embed);
@@ -75,12 +75,12 @@ namespace PlebBot.Modules
                 location = location.Substring(4);
                 if (String.IsNullOrEmpty(location))
                 {
-                    embed = await service.NoLocation();
+                    embed = await WeatherService.NoLocation();
                 }
                 else
                 {
                     await SaveUserData("City", location);
-                    embed = await service.SuccessfulLocationSet();
+                    embed = await WeatherService.SuccessfulLocationSet();
                 }
 
                 await ReplyAsync("", embed: embed.Build());
