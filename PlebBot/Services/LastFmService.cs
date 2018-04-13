@@ -76,15 +76,8 @@ namespace PlebBot.Services
             var tracks = response.recenttracks.track;
             string currAlbum = tracks[0].album["#text"] ?? "";
             string prevAlbum = tracks[1].album["#text"] ?? "";
-
-            var albumArt = "";
-            for (var i = 3; i >= 0; i++)
-            {
-                if (tracks[0].image[i] == null) continue;
-                albumArt = tracks[0].image[i]["#text"];
-                break;
-            }
-
+            var albumArt = await ChooseImage(tracks[0].image);
+            
             var embed = new EmbedBuilder();
             var currField = $"{tracks[0].artist["#text"]} - {tracks[0].name}";
             var prevField = $"{tracks[1].artist["#text"]} - {tracks[1].name}";
@@ -98,6 +91,19 @@ namespace PlebBot.Services
                 .WithColor(Color.DarkBlue);
 
             return embed;
+        }
+
+        public static Task<string> ChooseImage(dynamic imageArray)
+        {
+            var imageUrl = "";
+            for (var i = 3; i >= 0; i++)
+            {
+                if (imageArray[i] == null) continue;
+                imageUrl = imageArray[i]["#text"];
+                break;
+            }
+
+            return Task.FromResult(imageUrl);
         }
 
         public async Task<string> GetVideoLinkAsync(string username)
@@ -257,5 +263,76 @@ namespace PlebBot.Services
 
             return $"[{String.Format("{0:n0}", scrobbles)} scrobbles total]";
         }
+
+        public async Task<dynamic> GetInformationAsync(Category category, string query)
+        {
+            dynamic response;
+            switch (category)
+            {
+                case Category.Artist:
+                    response = await GetArtistInfoAsync(query);
+                    break;
+                case Category.Album:
+                    if (query.Contains(" - ")) response = await GetAlbumInfoAsync(query);
+                    else response = null;
+                    break;
+                case Category.Track:
+                    if (query.Contains(" - ")) response = await GetTrackInfoAsync(query);
+                    else response = null;
+                    break;
+                default:
+                    return null;
+            }
+
+            return response;
+        }
+
+        private async Task<dynamic> GetArtistInfoAsync(string query)
+        {
+            var url =
+                $"http://ws.audioscrobbler.com/2.0/?method=artist.getInfo&artist={query}" +
+                $"&api_key={lastFmKey}&autocorrect=1&format=json";
+            var response = await GetLastFmData(url);
+            
+            return response.artist == null ? null : response;
+        }
+
+        private async Task<dynamic> GetAlbumInfoAsync(string query)
+        {
+            var names = await ExtractNames(query);
+            var url = 
+                $"http://ws.audioscrobbler.com/2.0/?method=album.getInfo&artist={names.Artist}&album={names.Title}" +
+                $"&api_key={lastFmKey}&autocorrect=1&format=json";
+            var response = await GetLastFmData(url);
+
+            return response.album == null ? null : response;
+        }
+
+        private async Task<dynamic> GetTrackInfoAsync(string query)
+        {
+            var names = await ExtractNames(query);
+            var url =
+                $"http://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist={names.Artist}&track={names.Title}" +
+                $"&api_key={lastFmKey}&autocorrect=1&format=json";
+            var response = await GetLastFmData(url);
+
+            return response.track == null ? null : response;
+        }
+
+        private static Task<(string Artist, string Title)> ExtractNames(string query)
+        {
+            var dashIndex = query.IndexOf(" - ", StringComparison.Ordinal);
+            query = query.Remove(dashIndex, 1);
+            query = query.Remove(dashIndex + 1, 1);
+
+            return Task.FromResult((query.Substring(0, dashIndex), query.Substring(dashIndex + 1)));
+        }
+    }
+
+    public enum Category
+    {
+        Artist,
+        Track,
+        Album
     }
 }

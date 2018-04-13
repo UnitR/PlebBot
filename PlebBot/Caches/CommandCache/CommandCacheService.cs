@@ -12,7 +12,7 @@ namespace PlebBot.Caches.CommandCache
 {
     public class CommandCacheService : ICommandCache<ulong, ConcurrentBag<ulong>>, IDisposable
     {
-        public const int Unlimited = -1;
+        private const int Unlimited = -1;
 
         private readonly ConcurrentDictionary<ulong, ConcurrentBag<ulong>> cache
             = new ConcurrentDictionary<ulong, ConcurrentBag<ulong>>();
@@ -122,7 +122,7 @@ namespace PlebBot.Caches.CommandCache
             Dispose(true);
         }
 
-        protected void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposing || autoClear == null) return;
 

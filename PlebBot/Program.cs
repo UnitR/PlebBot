@@ -27,7 +27,7 @@ namespace PlebBot
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
 
-        public async Task MainAsync()
+        private async Task MainAsync()
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
@@ -48,13 +48,13 @@ namespace PlebBot
             await Task.Delay(-1);
         }
 
-        private Task Log(LogMessage msg)
+        private static Task Log(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
 
-        public async Task InstallAsync()
+        private async Task InstallAsync()
         {
             client.Log += Log;
             client.JoinedGuild += HandleJoinGuildAsync;

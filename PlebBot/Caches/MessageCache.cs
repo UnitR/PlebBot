@@ -5,7 +5,6 @@ using Discord;
 namespace PlebBot.Caches
 {
     // Based on https://github.com/RogueException/Discord.Net/blob/dev/src/Discord.Net.WebSocket/Entities/Messages/MessageCache.cs
-    // Also based on https://github.com/moiph/ub3r-b0t/blob/master/src/MessageCache.cs
     internal class MessageCache
     {
         private const int ProcessorCountRefreshIntervalMs = 30000;

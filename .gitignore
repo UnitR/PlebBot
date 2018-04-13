@@ -269,7 +269,6 @@ __pycache__/
 # session
 Session.vim
 /PlebBot/PlebBot.csproj.DotSettings
-PlebBot.Tests/_config.json
 /PlebBot.Tests/_config.json
-PlebBot.Data/_config.json
+/PlebBot/_config.json
 /PlebBot.Data/_config.json

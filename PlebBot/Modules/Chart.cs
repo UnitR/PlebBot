@@ -103,7 +103,7 @@ namespace PlebBot.Modules
                 {
                     await Context.Channel.SendFileAsync(
                         stream, 
-                        $"{user}_top_{type}_{size}.png", 
+                        $"{Context.User.Username}_top_{type}_{size}.png", 
                         $"Top {type.ToString().ToLowerInvariant()} for {Context.User.Username}:");
                 }
             }

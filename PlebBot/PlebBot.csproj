@@ -12,6 +12,7 @@
     <PackageReference Include="Google.Apis.Core" Version="1.32.2" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.32.2.1131" />
     <PackageReference Include="Discord.Net" Version="1.0.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.7.4" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="7.4.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
