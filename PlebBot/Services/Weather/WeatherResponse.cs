@@ -5,7 +5,7 @@ namespace PlebBot.Services.Weather
 {
     public partial class WeatherService
     {
-        public static Task<EmbedBuilder> NotLinkedError()
+        public Task<EmbedBuilder> NotLinkedError()
         {
             var response = new EmbedBuilder
             {
@@ -17,7 +17,7 @@ namespace PlebBot.Services.Weather
             return Task.FromResult(response);
         }
 
-        public static Task<EmbedBuilder> NoInformation()
+        public Task<EmbedBuilder> NoInformation()
         {
             var response = new EmbedBuilder
             {
@@ -29,7 +29,7 @@ namespace PlebBot.Services.Weather
             return Task.FromResult(response);
         }
 
-        public static Task<EmbedBuilder> NoLocation()
+        public Task<EmbedBuilder> NoLocation()
         {
             var response = new EmbedBuilder
             {
@@ -41,7 +41,7 @@ namespace PlebBot.Services.Weather
             return Task.FromResult(response);
         }
 
-        public static Task<EmbedBuilder> SuccessfulLocationSet()
+        public Task<EmbedBuilder> SuccessfulLocationSet()
         {
             var response = new EmbedBuilder
             {
