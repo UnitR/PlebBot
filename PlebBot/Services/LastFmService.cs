@@ -274,11 +274,19 @@ namespace PlebBot.Services
                     break;
                 case Category.Album:
                     if (query.Contains(" - ")) response = await GetAlbumInfoAsync(query);
-                    else response = null;
+                    else
+                    {
+                        var searchResult = await SearchLastFm(category, query);
+                        response = await GetAlbumInfoAsync($"{searchResult.artist} - {searchResult.name}");
+                    };
                     break;
                 case Category.Track:
                     if (query.Contains(" - ")) response = await GetTrackInfoAsync(query);
-                    else response = null;
+                    else
+                    {
+                        var searchResult = await SearchLastFm(category, query);
+                        response = await GetTrackInfoAsync($"{searchResult.artist} - {searchResult.name}");
+                    }
                     break;
                 default:
                     return null;
@@ -326,6 +334,16 @@ namespace PlebBot.Services
             query = query.Remove(dashIndex + 1, 1);
 
             return Task.FromResult((query.Substring(0, dashIndex), query.Substring(dashIndex + 1)));
+        }
+
+        private async Task<dynamic> SearchLastFm(Category searchType, string query)
+        {
+            var search = searchType.ToString().ToLower();
+            var url = $"http://ws.audioscrobbler.com/2.0/?method={search}.search&{search}={query}" +
+                      $"&api_key={lastFmKey}&format=json";
+            var searchResults = await GetLastFmData(url);
+
+            return searchResults.results[$"{search}matches"][search][0];
         }
     }
 
