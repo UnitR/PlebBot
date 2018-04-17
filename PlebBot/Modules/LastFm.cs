@@ -51,13 +51,13 @@ namespace PlebBot.Modules
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Number of artists to show. Maximum 25. Default is 10.")] int limit = 10,
             [Summary("Your last.fm username")] string username = "")
-            => await SendChartAsync(ChartType.Artists, limit, span, username);
+            => await SendChartAsync(ListType.Artists, limit, span, username);
 
         [Priority(1)]
         [Command("fm top artists", RunMode = RunMode.Async)]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists([Summary("Number of artists to show. Maximum 25. Default is 10.")] int limit = 10)
-            => await SendChartAsync(ChartType.Artists, limit);
+            => await SendChartAsync(ListType.Artists, limit);
 
         [Command("fm top albums", RunMode = RunMode.Async)]
         [Summary("Get the top albums for a user")]
@@ -65,13 +65,13 @@ namespace PlebBot.Modules
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Number of albums to show. Maximum 50. Default is 10.")] int limit = 10,
             [Summary("Your last.fm username")] string username = "")
-            => await SendChartAsync(ChartType.Albums, limit, span, username);
+            => await SendChartAsync(ListType.Albums, limit, span, username);
 
         [Priority(1)]
         [Command("fm top albums", RunMode = RunMode.Async)]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums([Summary("Number of albums to show. Maximum 50. Default is 10.")] int limit = 10)
-            => await SendChartAsync(ChartType.Albums, limit);
+            => await SendChartAsync(ListType.Albums, limit);
 
         [Command("fm top tracks", RunMode = RunMode.Async)]
         [Summary("Get the top tracks for a user")]
@@ -79,13 +79,13 @@ namespace PlebBot.Modules
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Number of tracks to show. Maximum 50. Default is 10.")] int limit = 10,
             [Summary("Your last.fm username")] string username = "")
-            => await SendChartAsync(ChartType.Tracks, limit, span, username);
+            => await SendChartAsync(ListType.Tracks, limit, span, username);
 
         [Priority(1)]
         [Command("fm top tracks", RunMode = RunMode.Async)]
         [Summary("Get the top tracks for a user")]
         public async Task TopTracks([Summary("Number of tracks to show. Maximum 50. Default is 10.")] int limit = 10)
-            => await SendChartAsync(ChartType.Tracks, limit);
+            => await SendChartAsync(ListType.Tracks, limit);
 
         [Command("fmyt", RunMode = RunMode.Async)]
         [Summary("Send a YouTube link to your current scrobble")]
@@ -110,9 +110,9 @@ namespace PlebBot.Modules
             await ReplyAsync(response);
         }
 
-        private async Task SendChartAsync(ChartType chartType, int limit, string span = "", string username = "")
+        private async Task SendChartAsync(ListType ListType, int limit, string span = "", string username = "")
         {
-            if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+            if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
             if (username == string.Empty)
             {
@@ -125,7 +125,7 @@ namespace PlebBot.Modules
                 }
             }
 
-            var response = await lastFm.GetTopAsync(chartType, limit, span, username);
+            var response = await lastFm.GetTopAsync(ListType, limit, span, username);
             if (response == null)
             {
                 await Error("No scrobbled albums.");
@@ -134,9 +134,9 @@ namespace PlebBot.Modules
 
             var list = "";
             var i = 1;
-            switch (chartType)
+            switch (ListType)
             {
-                case ChartType.Albums:
+                case ListType.Albums:
                     foreach (var album in response.topalbums.album)
                     {
                         list += $"{i}. {album.artist.name} - *{album.name}* " +
@@ -144,7 +144,7 @@ namespace PlebBot.Modules
                         i++;
                     }
                     break;
-                case ChartType.Artists:
+                case ListType.Artists:
                     foreach (var artist in response.topartists.artist)
                     {
                         list += $"{i}. {artist.name} [{String.Format("{0:n0}", (int) artist.playcount)} " +
@@ -152,7 +152,7 @@ namespace PlebBot.Modules
                         i++;
                     }
                     break;
-                case ChartType.Tracks:
+                case ListType.Tracks:
                     foreach(var track in response.toptracks.track)
                     {
                         list += $"{i}. {track.artist.name} - *{track.name}* " +
@@ -161,17 +161,17 @@ namespace PlebBot.Modules
                     }
                     break;
             }
-            var embed = await BuildTopAsync(list, username, chartType.ToString().ToLowerInvariant(), span);
+            var embed = await BuildTopAsync(list, username, ListType.ToString().ToLowerInvariant(), span);
             await ReplyAsync("", embed: embed.Build());
         }
 
         //builds the embed for the chart
-        private async Task<EmbedBuilder> BuildTopAsync(string list, string username, string chartType, string span)
+        private async Task<EmbedBuilder> BuildTopAsync(string list, string username, string ListType, string span)
         {
             var totalScrobbles = await lastFm.TotalScrobblesAsync(span, username);
             span = await LastFmService.FormatSpan(span.ToLowerInvariant());
             var embed = new EmbedBuilder()
-                .WithTitle($"Top {chartType} for {username} - {span} {totalScrobbles}")
+                .WithTitle($"Top {ListType} for {username} - {span} {totalScrobbles}")
                 .WithDescription(list)
                 .WithColor(Color.Gold);
             return embed;

@@ -25,7 +25,7 @@ namespace PlebBot.Modules
         [Summary("Link a chart to your account.")]
         public async Task SetChart(string chartLink = "")
         {
-            if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+            if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
             if (chartLink == String.Empty)
             {
@@ -33,6 +33,20 @@ namespace PlebBot.Modules
                 if (temp.EndsWith("png") || temp.EndsWith(".jpg") || temp.EndsWith(".jpeg") || temp.EndsWith(".bmp"))
                     chartLink = Context.Message.Attachments.First().Url;
             }
+
+            var imageBytes = await httpClient.GetByteArrayAsync(chartLink);
+            
+            try
+            {
+                var user = await FindUserAsync();
+                if (user == null)
+                    await userRepo.Add(new[] {"DiscordId", "Chart"}, new object[] {(long) Context.User.Id, imageBytes});
+                else
+                    await userRepo.UpdateFirst("Chart", imageBytes, $"\"DiscordId\" = {(long) Context.User.Id}");
+
+                await Success("Successfully saved the chart.");
+            }
+            catch (NpgsqlException ex)
 
             if (!(Uri.IsWellFormedUriString(chartLink, UriKind.Absolute)) || String.IsNullOrEmpty(chartLink))
             {
@@ -57,7 +71,7 @@ namespace PlebBot.Modules
         [Summary("Send your chart")]
         public async Task SendChart()
         {
-            if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+            if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
             var user = await FindUserAsync();
             if (user?.Chart == null)
@@ -83,14 +97,14 @@ namespace PlebBot.Modules
 
             [Command(RunMode = RunMode.Async)]
             public async Task Top(ChartType type, string span, 
-                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size)
+                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size, boolean caption)
             {
-                if (!await Preconditions.Preconditions.InCharposting(Context)) return;
+                if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
                 var user = await FindUserAsync();
                 if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
 
-                var result = await chartService.GetChartAsync(size, type, user.LastFm, span);
+                var result = await chartService.GetChartAsync(size, type, user.LastFm, span, caption);
 
                 if (result == null)
                 {
@@ -98,7 +112,7 @@ namespace PlebBot.Modules
                         "Something went wrong obtaining the chart information. Check the given parameters and try again");
                     return;
                 }
-                
+              
                 using (Stream stream = new MemoryStream(result))
                 {
                     await Context.Channel.SendFileAsync(

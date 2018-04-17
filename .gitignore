@@ -270,5 +270,8 @@ __pycache__/
 Session.vim
 /PlebBot/PlebBot.csproj.DotSettings
 /PlebBot.Tests/_config.json
+
 /PlebBot/_config.json
 /PlebBot.Data/_config.json
+
+.DS_Store
