@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 using SkiaSharp;
 
 namespace PlebBot.Services.Chart
@@ -19,12 +20,12 @@ namespace PlebBot.Services.Chart
             httpClient = client;
         }
 
-        public async Task<byte[]> GetChartAsync(ChartSize size, ChartType type, string username, string span)
-            => await GetChart(size, type, username, span);
+        public async Task<byte[]> GetChartAsync(ChartSize size, ChartType type, string username, string span, boolean caption)
+            => await GetChart(size, type, username, span, caption);
 
-        private async Task<byte[]> GetChart(ChartSize size, ChartType type, string username, string span)
+        private async Task<byte[]> GetChart(ChartSize size, ChartType type, string username, string span, boolean caption)
         {
-            var imageDictionary = await GetAlbumArt(size, type, username, span);
+            var imageDictionary = await GetAlbumArt(size, type, username, span, caption);
             if (imageDictionary == null) return null;
             var result = await BuildChart(imageDictionary, (int) size);
             return result;
@@ -33,13 +34,13 @@ namespace PlebBot.Services.Chart
         //TODO: add names to charts
         private static Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
         {
-            var images = new List<SKBitmap>(imageDictionary.Count);
+            var images = new List<(string Cap, SKBitmap Img)>(imageDictionary.Count);
 
             images.AddRange(
-                from image in imageDictionary where image.Value.Length != 0 select SKBitmap.Decode(image.Value));
-
-            var height = images[0].Height * chartSize;
-            var width = images[0].Width * chartSize;
+                from image in imageDictionary where (image.Key.Length != 0 && image.Value.Length != 0) select (image.Key, SKBitmap.Decode(image.Value)));
+            
+            var height = images[0].Img.Height * chartSize;
+            var width = images[0].Img.Width * chartSize;
 
             var tempSurface = SKSurface.Create(new SKImageInfo(width, height));
             var canvas = tempSurface.Canvas;
@@ -47,16 +48,24 @@ namespace PlebBot.Services.Chart
             var offset = 0;
             var offsetTop = 0;
             var i = 1;
-            foreach (var image in images)
+
+            var font = new SKPaint();
+            font.TextSize = 64.0f;
+            font.IsAntialias = true;
+            font.Color = new SKColor(0xFFFFFFFF);
+            font.IsStroke = false;
+
+            foreach (var pair in images)
             {
-                if (image == null) continue;
-                canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
+                if (pair.img == null) continue;
+                canvas.DrawBitmap(pair.img, SKRect.Create(offset, offsetTop, pair.img.Width, pair.img.Height));
+                canvas.DrawText(pair.cap, offset, offsetTop, font);
                 canvas.Flush();
-                offset += images[i].Width;
+                offset += images[i].Img.Width;
                 if (i == chartSize)
                 {
                     offset = 0;
-                    offsetTop += image.Height;
+                    offsetTop += pair.img.Height;
                     i = 1;
                     continue;
                 }
@@ -74,7 +83,7 @@ namespace PlebBot.Services.Chart
         }
 
         private async Task<Dictionary<string, byte[]>> GetAlbumArt(
-            ChartSize size, ChartType type, string username, string span)
+            ChartSize size, ChartType type, string username, string span, boolean caption)
         {
             var intSize = (int) size;
             intSize *= intSize;
@@ -97,6 +106,7 @@ namespace PlebBot.Services.Chart
             {
                 string url = null;
                 byte[] art = null;
+                string txt = null;
 
                 for (var j = 2; j >= 0; j--)
                 {

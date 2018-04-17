@@ -25,7 +25,7 @@ namespace PlebBot.Services
         }
 
         public async Task<dynamic> GetTopAsync(
-            ChartType chart, int limit, string span = "", string username = "", ulong userId = 0)
+            [OverrideTypeReader(typeof(ListTypeReader))] ListType chart, int limit, string span = "", string username = "", ulong userId = 0)
         {
             if (!await CheckIfUserExistsAsync(username))
                 return errorEmbed.WithDescription(NotFound);
@@ -38,13 +38,13 @@ namespace PlebBot.Services
             span = await DetermineSpan(span);
             switch (chart)
             {
-                case ChartType.Artists:
+                case ListType.Artists:
                     response = await GetTopArtistsAsync(username, span, limit);
                     break;
-                case ChartType.Albums:
+                case ListType.Albums:
                     response = await GetTopAlbumsAsync(username, span, limit);
                     break;
-                case ChartType.Tracks:
+                case ListType.Tracks:
                     response = await GetTopTracksAsync(username, span, limit);
                     break;
                 default:
