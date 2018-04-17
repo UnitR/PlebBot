@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Discord;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using PlebBot.Data.Models;
+using PlebBot.Data.Repositories;
 using PlebBot.Services.Chart;
 
 namespace PlebBot.Services
@@ -13,19 +15,21 @@ namespace PlebBot.Services
     public class LastFmService
     {
         private readonly string lastFmKey;
+        private readonly Repository<User> userRepo;
         private readonly HttpClient httpClient;
         private const string NotFound = "last.fm user not found.";
         private readonly EmbedBuilder errorEmbed = new EmbedBuilder().WithTitle("Error").WithColor(Color.DarkRed);
 
-        public LastFmService(HttpClient client)
+        public LastFmService(Repository<User> repo, HttpClient client)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             lastFmKey = config["tokens:lastfm_key"];
+            userRepo = repo;
             httpClient = client;
         }
 
         public async Task<dynamic> GetTopAsync(
-            [OverrideTypeReader(typeof(ListTypeReader))] ListType chart, int limit, string span = "", string username = "", ulong userId = 0)
+            ChartType chart, int limit, string span = "", string username = "", ulong userId = 0)
         {
             if (!await CheckIfUserExistsAsync(username))
                 return errorEmbed.WithDescription(NotFound);
@@ -38,13 +42,13 @@ namespace PlebBot.Services
             span = await DetermineSpan(span);
             switch (chart)
             {
-                case ListType.Artists:
+                case ChartType.Artists:
                     response = await GetTopArtistsAsync(username, span, limit);
                     break;
-                case ListType.Albums:
+                case ChartType.Albums:
                     response = await GetTopAlbumsAsync(username, span, limit);
                     break;
-                case ListType.Tracks:
+                case ChartType.Tracks:
                     response = await GetTopTracksAsync(username, span, limit);
                     break;
                 default:
@@ -111,6 +115,30 @@ namespace PlebBot.Services
             var ytService = new YtService();
             var link = await ytService.GetVideoLinkAsync($"{track.artist["#text"]} {track.name}");
             return link;
+        }
+
+        public async Task<EmbedBuilder> SaveUserAsync(string username, ulong userId)
+        {
+            if (username == null) return errorEmbed.WithDescription("You must provide a username.");
+            if (!await CheckIfUserExistsAsync(username)) return errorEmbed.WithTitle(NotFound);
+
+            var findCondition = $"\"DiscordId\" = {(long) userId}";
+            var user = await userRepo.FindFirst(findCondition);
+            var embed =
+                new EmbedBuilder().WithTitle("Success")
+                    .WithDescription("Succesfully set your last.fm username.");
+            if (user != null)
+            {
+                var updateCondition = $"\"Id\" = {user.Id}";
+                await userRepo.UpdateFirst("LastFm", username, updateCondition);
+
+                return embed;
+            }
+            string[] columns = {"DiscordId", "LastFm"};
+            object[] values = {(long) userId};
+            await userRepo.Add(columns, values);
+
+            return embed;
         }
 
         public async Task<dynamic> GetTopAlbumsAsync(string username, string span, int limit)

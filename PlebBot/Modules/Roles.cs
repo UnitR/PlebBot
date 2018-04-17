@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repository;
+using PlebBot.Data.Repositories;
 
 namespace PlebBot.Modules
 {
@@ -99,7 +99,8 @@ namespace PlebBot.Modules
         [Summary("Removes a role from you")]
         public async Task RemoveRole([Summary("The name of the role you want to remove")] string role)
         {
-            var roleResult = await roleRepo.FindFirst("Name", role.ToLowerInvariant());
+            var condition = $"lower(\"Name\") = \'{role.ToLower()}\'";
+            var roleResult = await roleRepo.FindFirst(condition);
 
             if (roleResult == null)
             {
@@ -110,16 +111,21 @@ namespace PlebBot.Modules
             var user = Context.User as IGuildUser;
 
             Debug.Assert(user != null, "user != null");
-            var userRole = user.RoleIds.FirstOrDefault(r => r == (ulong) roleResult.DiscordId);
+            var query = from r in user.RoleIds.AsParallel()
+                where r == (ulong) roleResult.DiscordId
+                select r;
 
-            if (userRole == 0)
+            if (query.Count() != 0)
             {
-                await Error($"You don't have '{roleResult.Name}' assigned to you.");
+                query.ForAll(async r =>
+                {
+                    var guildRole = Context.Guild.Roles.FirstOrDefault(x => x.Id == r);
+                    await user.RemoveRoleAsync(guildRole);
+                    await Success($"Removed '{roleResult.Name}' from your roles.");
+                });
                 return;
             }
-            var guildRole = Context.Guild.Roles.FirstOrDefault(x => x.Id == userRole);
-            await user.RemoveRoleAsync(guildRole);
-            await Success($"Removed '{roleResult.Name}' from your roles.");
+            await Error($"You don't have '{roleResult.Name}' assigned to you.");
         }
 
 
@@ -137,11 +143,15 @@ namespace PlebBot.Modules
 
             if (roleFind != null)
             {
-                var roleDb = await roleRepo.FindFirst("Name", role.ToLower());
+                var roleCondition = $"lower(\"Name\") = \'{role.ToLower()}\'";
+                var roleDb = await roleRepo.FindFirst(roleCondition);
+
                 if (roleDb == null)
                 {
-                    var server = await serverRepo.FindByDiscordId((long) Context.Guild.Id);
+                    var serverCondition = $"\"DiscordId\" = {Context.Guild.Id}";
+                    var server = await serverRepo.FindFirst(serverCondition);
                     var serverId = server.Id;
+
                     var isColour = colour == "-c";
 
                     string[] columns = { "ServerId", "DiscordId", "Name", "IsColour" };
@@ -167,10 +177,13 @@ namespace PlebBot.Modules
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task RemoveAssignable([Summary("The role whose name you wish to remove")] string role)
         {
-            var roleToRemove = await roleRepo.FindFirst("Name", role.ToLower());
+            var condition = $"\"Name\" = \'{role.ToLower()}\'";
+            var roleToRemove = await roleRepo.FindFirst(condition);
             if (roleToRemove != null)
             {
-                await roleRepo.DeleteFirst("Id", roleToRemove.Id);
+                var delCondition = $"\"Id\" = {roleToRemove.Id}";
+                await roleRepo.DeleteFirst(delCondition);
+
                 await Success(
                     $"The '{roleToRemove.Name}' role has been successfully removed from the self-assignable list");
                 return;
@@ -180,8 +193,12 @@ namespace PlebBot.Modules
 
         private async Task<List<Role>> GetServerRolesAsync()
         {
-            var server = await serverRepo.FindByDiscordId((long) Context.Guild.Id);
-            var roles = await roleRepo.FindAll("ServerId", server.Id) as List<Role>;
+            var serverCondition = $"\"DiscordId\" = {Context.Guild.Id}";
+            var server = await serverRepo.FindFirst(serverCondition);
+            var serverId = server.Id;
+
+            var roleCondition = $"\"ServerId\" = {serverId}";
+            var roles = await roleRepo.FindAll(roleCondition) as List<Role>;
 
             return roles;
         }

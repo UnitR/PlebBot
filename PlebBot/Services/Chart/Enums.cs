@@ -1,16 +1,10 @@
 ﻿namespace PlebBot.Services.Chart
 {
-    public enum ListType
+    public enum ChartType
     {
         Artists,
         Albums,
         Tracks
-    }
-
-    public enum ChartType
-    {
-        Artists,
-        Albums
     }
 
     public enum ChartSize

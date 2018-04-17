@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repository;
+using PlebBot.Data.Repositories;
 
 namespace PlebBot
 {
@@ -13,11 +13,13 @@ namespace PlebBot
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
         {
-            if (!(messageParam is SocketUserMessage message)) return;
+            var message = messageParam as SocketUserMessage;
+            if (message == null) return;
             var argPos = 0;
             var context = new SocketCommandContext(client, message);
 
-            var server = await serverRepo.FindByDiscordId((long) context.Guild.Id);
+            var condition = $"\"DiscordId\" = {context.Guild.Id}";
+            var server = await serverRepo.FindFirst(condition);
             var prefix = server.Prefix;
 
             if (prefix == null) return;
@@ -59,7 +61,9 @@ namespace PlebBot
         private async Task HandleLeaveGuildAsync(SocketGuild guild)
         {
             if (guild == null) return;
-            await serverRepo.DeleteFirst("DiscordId", guild.Id);
+
+            var condition = $"\"DiscordId\" = {guild.Id}";
+            await serverRepo.DeleteFirst(condition);
         }
     }
 }

@@ -16,6 +16,10 @@ namespace PlebBot.TypeReaders
                 case "album":
                     type = ChartType.Albums;
                     break;
+                case "tracks":
+                case "track":
+                    type = ChartType.Tracks;
+                    break;
                 case "artists":
                 case "artist":
                     type = ChartType.Artists;

@@ -5,7 +5,7 @@ namespace PlebBot.Preconditions
 {
     public static class Preconditions
     {
-        public static async Task<bool> InChartposting(ICommandContext context)
+        public static async Task<bool> InCharposting(ICommandContext context)
         {
             var id = context.Channel.Id;
             if (context.Guild.Id != 238003175381139456 || id == 276042631270629376 || id == 314664843892228096 

@@ -19,14 +19,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
-    <PackageReference Include="SkiaSharp" Version="1.60.0" />
     <PackageReference Include="YoutubeExplode" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="libSkiaSharp.so">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="opus.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
