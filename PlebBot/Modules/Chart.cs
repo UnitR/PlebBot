@@ -48,6 +48,7 @@ namespace PlebBot.Modules
             }
             catch (NpgsqlException ex)
 
+            if (imageBytes.Length == 0)
             {
                 await Error("No chart image provided");
                 return;
