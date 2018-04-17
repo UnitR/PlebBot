@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using PlebBot.Caches.CommandCache;
 using PlebBot.Data.Models;
-using PlebBot.Data.Repository;
+using PlebBot.Data.Repositories;
 using PlebBot.Services;
 using PlebBot.Services.Chart;
 using PlebBot.Services.Weather;
@@ -82,7 +82,6 @@ namespace PlebBot
             serviceCollection.AddTransient<ChartService>();
             commands.AddTypeReader<ChartSize>(new ChartSizeReader());
             commands.AddTypeReader<ChartType>(new ChartTypeReader());
-            commands.AddTypeReader<ListType>(new ListTypeReader());
 
             return serviceCollection.BuildServiceProvider();
         }

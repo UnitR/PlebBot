@@ -5,6 +5,8 @@ using Discord;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using PlebBot.Data.Models;
+using PlebBot.Data.Repositories;
 
 namespace PlebBot.Services.Weather
 {
@@ -12,13 +14,15 @@ namespace PlebBot.Services.Weather
     {
         private readonly HttpClient httpClient;
         private readonly string apiAddress;
+        private readonly Repository<User> userRepo;
         private EmbedBuilder embed;
 
-        public WeatherService(HttpClient client)
+        public WeatherService(HttpClient client, Repository<User> repo)
         {
             var config = new ConfigurationBuilder().AddJsonFile("_config.json").Build();
             apiAddress = $"http://api.wunderground.com/api/{config["tokens:weather_key"]}";
             httpClient = client;
+            userRepo = repo;
             embed = new EmbedBuilder().WithFooter(
                 "Weather data provided by the Weather Underground",
                 "https://icons.wxug.com/logos/PNG/wundergroundLogo_4c_rev.png");
@@ -78,23 +82,20 @@ namespace PlebBot.Services.Weather
             var kmh = (observation.wind_kph != 0) ? $"{observation.wind_kph} km/h" : "";
             var mph = (observation.wind_mph != 0) ? $"({observation.wind_mph} mph)" : "";
 
-            string windDir = observation.wind_dir.ToString();
+            string windDir = observation.wind_dir.ToString().ToLowerInvariant();
             windDir = await DetermineWind(windDir);
             var windText = 
                 (windDir != String.Empty && (kmh != String.Empty || mph != String.Empty)) ? 
-                $"{windDir} at {kmh} {mph}" : "Calm";
-
-            string iconUrl = observation.icon_url.ToString();
-            iconUrl = "https://icons.wxug.com/i/c/b" + iconUrl.Substring(iconUrl.LastIndexOf('/'));
+                $"Moving {windDir} at {kmh} {mph}" : "Calm";
 
             embed.WithTitle($"Current weather in {observation.display_location.full}");
             embed.WithUrl(observation.forecast_url.ToString());
-            embed.WithThumbnailUrl(iconUrl);
+            embed.WithThumbnailUrl($"https://icons.wxug.com/i/c/b/{observation.icon}.gif");
             embed.AddInlineField(
                 "Weather Condition:",
-                $"{observation.weather} |  " +
+                $"{observation.weather} | Feels like " +
+                $"{observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
                 $"Actual: {observation.temp_c}°C ({observation.temp_f}°F)\n" +
-                $"Feels like: {observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
                 $"High: {forecast.high.celsius}°C ({forecast.high.fahrenheit}°F) | " +
                 $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)");
             embed.AddInlineField("Wind:", windText);
@@ -145,34 +146,34 @@ namespace PlebBot.Services.Weather
                 case Directions.NNW:
                 case Directions.N:
                 case Directions.NNE:
-                    windDir = "North";
+                    windDir = "north";
                     break;
                 case Directions.NE:
-                    windDir = "Northeast";
+                    windDir = "northeast";
                     break;
                 case Directions.ENE:
                 case Directions.E:
                 case Directions.ESE:
-                    windDir = "East";
+                    windDir = "east";
                     break;
                 case Directions.SE:
-                    windDir = "Southeast";
+                    windDir = "southeast";
                     break;
                 case Directions.SSE:
                 case Directions.S:
                 case Directions.SSW:
-                    windDir = "South";
+                    windDir = "south";
                     break;
                 case Directions.SW:
-                    windDir = "Southwest";
+                    windDir = "southwest";
                     break;
                 case Directions.WSW:
                 case Directions.W:
                 case Directions.WNW:
-                    windDir = "West";
+                    windDir = "west";
                     break;
                 case Directions.NW:
-                    windDir = "Northwest";
+                    windDir = "northwest";
                     break;
                 default:
                     windDir = "";
@@ -180,6 +181,32 @@ namespace PlebBot.Services.Weather
             }
 
             return Task.FromResult(windDir);
+        }
+
+        public async Task<EmbedBuilder> SaveLocation(string location, long userId)
+        {
+            if (location == null)
+            {
+                embed = WeatherResponse.NoLocation();
+                return embed;
+            }
+
+            location = location.Substring(4);
+            var condition = $"\"DiscordId\" = {userId}";
+            var user = await userRepo.FindFirst(condition);
+            if (user != null)
+            {
+                await userRepo.UpdateFirst("City", location, condition);
+            }
+            else
+            {
+                string[] columns = {"DiscordId", "City"};
+                object[] values = {userId, location};
+                await userRepo.Add(columns, values);
+            }
+
+            embed = WeatherResponse.SuccessfulLocationSet();
+            return embed;
         }
     }
 

@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing;
-using SkiaSharp;
+using ImageMagick;
 
 namespace PlebBot.Services.Chart
 {
@@ -20,75 +17,97 @@ namespace PlebBot.Services.Chart
             httpClient = client;
         }
 
-        public async Task<byte[]> GetChartAsync(ChartSize size, ChartType type, string username, string span, boolean caption)
-            => await GetChart(size, type, username, span, caption);
+        public async Task<byte[]> GetChartAsync(ChartSize size, ChartType type, string username, string span)
+            => await GetChart(size, type, username, span);
 
-        private async Task<byte[]> GetChart(ChartSize size, ChartType type, string username, string span, boolean caption)
+        private async Task<byte[]> GetChart(ChartSize size, ChartType type, string username, string span)
         {
-            var imageDictionary = await GetAlbumArt(size, type, username, span, caption);
+            var imageDictionary = await GetAlbumArt(size, type, username, span);
             if (imageDictionary == null) return null;
             var result = await BuildChart(imageDictionary, (int) size);
             return result;
         }
 
-        //TODO: add names to charts
-        private static Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
+        private async Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
         {
-            var images = new List<(string Cap, SKBitmap Img)>(imageDictionary.Count);
-
-            images.AddRange(
-                from image in imageDictionary where (image.Key.Length != 0 && image.Value.Length != 0) select (image.Key, SKBitmap.Decode(image.Value)));
-            
-            var height = images[0].Img.Height * chartSize;
-            var width = images[0].Img.Width * chartSize;
-
-            var tempSurface = SKSurface.Create(new SKImageInfo(width, height));
-            var canvas = tempSurface.Canvas;
-            canvas.Clear(SKColors.Black);
-            var offset = 0;
-            var offsetTop = 0;
-            var i = 1;
-
-            var font = new SKPaint();
-            font.TextSize = 64.0f;
-            font.IsAntialias = true;
-            font.Color = new SKColor(0xFFFFFFFF);
-            font.IsStroke = false;
-
-            foreach (var pair in images)
+            byte[] bytes;
+            using (var images = new MagickImageCollection())
             {
-                if (pair.img == null) continue;
-                canvas.DrawBitmap(pair.img, SKRect.Create(offset, offsetTop, pair.img.Width, pair.img.Height));
-                canvas.DrawText(pair.cap, offset, offsetTop, font);
-                canvas.Flush();
-                offset += images[i].Img.Width;
-                if (i == chartSize)
+                foreach (var image in imageDictionary)
                 {
-                    offset = 0;
-                    offsetTop += pair.img.Height;
-                    i = 1;
-                    continue;
+                    MagickImage img;
+                    if (image.Value == null)
+                    {
+                        img = new MagickImage(MagickColors.Black, 300, 300);
+                    }
+                    else img = await GenerateImage(image.Value);
+                    new Drawables()
+                        .TextAlignment(TextAlignment.Left)
+                        .StrokeColor(MagickColors.White)
+                        .FillColor(MagickColors.White)
+                        .TextAntialias(true)
+                        .Font("Tahoma")
+                        .FontPointSize(12.5)
+                        .Text(0, 11, image.Key)
+                        .TextKerning(1.5)
+                        .TextUnderColor(MagickColors.Black)
+                        .StrokeAntialias(true)
+                        .Draw(img);
+                    images.Add(img);
                 }
-                i++;
-            }
-            var result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
 
-            tempSurface.Dispose();
-            foreach (var image in images)
+                var settings = new MontageSettings()
+                {
+                    TileGeometry = new MagickGeometry(chartSize, chartSize),
+                    BackgroundColor = MagickColors.Black,
+                    Geometry = new MagickGeometry(900, 900)
+                };
+                using (var result = images.Montage(settings))
+                {
+                    result.Scale(new Percentage(20));
+                    bytes = result.ToByteArray(MagickFormat.Png);
+                }
+            }
+            return bytes;
+        }
+
+        private Task<MagickImage> GenerateImage(byte[] image)
+        {
+            var readSettings = new MagickReadSettings()
             {
-                image?.Dispose();
+                Width = 300,
+                Height = 300,
+            };
+
+            var fileType = image.GetFileType();
+            switch (fileType.Extension)
+            {
+                case "png":
+                    readSettings.Format = MagickFormat.Png;
+                    break;
+                case "jpeg":
+                    readSettings.Format = MagickFormat.Jpeg;
+                    break;
+                case "gif":
+                    readSettings.Format = MagickFormat.Gif;
+                    break;
+                case "bmp":
+                    readSettings.Format = MagickFormat.Bmp;
+                    break;
             }
 
-            return Task.FromResult(result);
+            var img = new MagickImage(image, readSettings);
+            if(img.Format != MagickFormat.Png) img.Format = MagickFormat.Png;
+            return Task.FromResult(img);
         }
 
         private async Task<Dictionary<string, byte[]>> GetAlbumArt(
-            ChartSize size, ChartType type, string username, string span, boolean caption)
+            ChartSize size, ChartType type, string username, string span)
         {
             var intSize = (int) size;
             intSize *= intSize;
             var response = await lastFm.GetTopAsync(type, intSize, span, username);
-            var imageDictionary = new Dictionary<string, byte[]>(intSize);
+            var imageDictionary = new Dictionary<string, byte[]>();
 
             switch (type)
             {
@@ -104,25 +123,15 @@ namespace PlebBot.Services.Chart
 
             for (var i = 0; i < response.Count; i++)
             {
-                string url = null;
+                var url = response[i].image[2]["#text"] ?? null;
                 byte[] art = null;
-                string txt = null;
-
-                for (var j = 2; j >= 0; j--)
+                if (url != null)
                 {
-                    url = response[i].image[j]["#text"].ToString();
-                    if (!String.IsNullOrEmpty(url)) break;
+                    art = await httpClient.GetByteArrayAsync(url.ToString());
                 }
-
-                if (!String.IsNullOrEmpty(url))
-                {
-                    art = await httpClient.GetByteArrayAsync(url);
-                }
-
                 var name = new StringBuilder();
-                name.Append($"{response[i].name}");
-                if (response[i].artist != null) name.Append($"\n{response[i].artist.name}");
-                if (art == null) art = new byte[] { };
+                name.Append($" {response[i].name} ");
+                if (response[i].artist != null) name.Append($"\n {response[i].artist.name} ");
                 imageDictionary.Add(name.ToString(), art);
             }
 

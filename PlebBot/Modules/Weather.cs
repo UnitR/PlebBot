@@ -72,17 +72,7 @@ namespace PlebBot.Modules
 
             if (location.Contains("set "))
             {
-                location = location.Substring(4);
-                if (String.IsNullOrEmpty(location))
-                {
-                    embed = WeatherResponse.NoLocation();
-                }
-                else
-                {
-                    await SaveUserData("City", location);
-                    embed = WeatherResponse.SuccessfulLocationSet();
-                }
-
+                embed = await service.SaveLocation(location, (long) Context.User.Id);
                 await ReplyAsync("", embed: embed.Build());
                 return;
             }
