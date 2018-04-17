@@ -4,9 +4,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PlebBot.Services.Chart;
+using PlebBot.TypeReaders;
 
 namespace PlebBot.Services
 {
@@ -24,8 +26,7 @@ namespace PlebBot.Services
             httpClient = client;
         }
 
-        public async Task<dynamic> GetTopAsync(
-            [OverrideTypeReader(typeof(ListTypeReader))] ListType chart, int limit, string span = "", string username = "", ulong userId = 0)
+        public async Task<dynamic> GetTopAsync(ListType chart, int limit, string span = "", string username = "")
         {
             if (!await CheckIfUserExistsAsync(username))
                 return errorEmbed.WithDescription(NotFound);

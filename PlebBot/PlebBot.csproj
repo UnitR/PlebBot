@@ -38,4 +38,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PlebBot.Data\PlebBot.Data.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Utilities\Roboto" />
+  </ItemGroup>
 </Project>

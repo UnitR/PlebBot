@@ -83,14 +83,17 @@ namespace PlebBot.Modules
 
             [Command(RunMode = RunMode.Async)]
             public async Task Top(ChartType type, string span, 
-                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size, boolean caption)
+                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size, string caption = "")
             {
                 if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
                 var user = await FindUserAsync();
                 if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
 
-                var result = await chartService.GetChartAsync(size, type, user.LastFm, span);
+                caption = caption.ToLowerInvariant();
+                var withCaption = caption == "captions" || caption == "-c" || caption == "-t" || caption == "titles";
+                    
+                var result = await chartService.GetChartAsync(size, type, user.LastFm, span, withCaption);
 
                 if (result == null)
                 {
