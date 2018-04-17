@@ -82,6 +82,7 @@ namespace PlebBot
             serviceCollection.AddTransient<ChartService>();
             commands.AddTypeReader<ChartSize>(new ChartSizeReader());
             commands.AddTypeReader<ChartType>(new ChartTypeReader());
+            commands.AddTypeReader<ListType>(new ListTypeReader());
 
             return serviceCollection.BuildServiceProvider();
         }
