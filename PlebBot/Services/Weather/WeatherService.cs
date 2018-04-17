@@ -124,7 +124,7 @@ namespace PlebBot.Services.Weather
                 string windDir = await DetermineWind(day.avewind.dir.ToString());
                 embed.AddField(
                     $"{day.date.weekday} ({day.date.monthname} {day.date.day})",
-                    $"Conditions: {day.conditions} | " +
+                    $"{day.conditions} | " +
                     $"High: {day.high.celsius}°C ({day.high.fahrenheit}°F) | " +
                     $"Low: {day.low.celsius}°C ({day.low.fahrenheit}°F) | " +
                     $"Wind: {windDir} at {day.avewind.kph} km/h ({day.avewind.mph} mph) | " +

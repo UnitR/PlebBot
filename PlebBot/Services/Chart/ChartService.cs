@@ -4,6 +4,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
+using System.Net.Mime;
+using Discord;
 using SkiaSharp;
 
 namespace PlebBot.Services.Chart
@@ -19,67 +22,108 @@ namespace PlebBot.Services.Chart
             httpClient = client;
         }
 
-        public async Task<byte[]> GetChartAsync(ChartSize size, ChartType type, string username, string span)
-            => await GetChart(size, type, username, span);
+        public async Task<byte[]> GetChartAsync(ChartSize size, ChartType type, string username, string span, bool caption)
+            => await GetChart(size, type, username, span, caption);
 
-        private async Task<byte[]> GetChart(ChartSize size, ChartType type, string username, string span)
+        private async Task<byte[]> GetChart(ChartSize size, ChartType type, string username, string span, bool caption)
         {
-            var imageDictionary = await GetAlbumArt(size, type, username, span);
+            var imageDictionary = await GetAlbumArt(size, type, username, span, caption);
             if (imageDictionary == null) return null;
-            var result = await BuildChart(imageDictionary, (int) size);
+            var result = await BuildChart(imageDictionary, (int) size, caption);
             return result;
         }
 
-        //TODO: add names to charts
-        private static Task<byte[]> BuildChart(Dictionary<string, byte[]> imageDictionary, int chartSize)
+        private async Task<byte[]> BuildChart(List<(string Caption, byte[] Image)> imageList, int chartSize, bool caption)
         {
-            var images = new List<SKBitmap>(imageDictionary.Count);
+            var images = new List<(string Cap, SKBitmap Img)>(imageList.Count);
+            images.AddRange(from image in imageList select (image.Caption, SKBitmap.Decode(image.Image)));
+            
+            var height = images[0].Img.Height * chartSize;
+            var width = images[0].Img.Width * chartSize;
+            var widthExtension = 0;
+            if (caption) widthExtension = 400; //how much room there is for the text
 
-            images.AddRange(
-                from image in imageDictionary where image.Value.Length != 0 select SKBitmap.Decode(image.Value));
-
-            var height = images[0].Height * chartSize;
-            var width = images[0].Width * chartSize;
-
-            var tempSurface = SKSurface.Create(new SKImageInfo(width, height));
+            var tempSurface = SKSurface.Create(new SKImageInfo(width + widthExtension, height));
             var canvas = tempSurface.Canvas;
             canvas.Clear(SKColors.Black);
+
+            if (caption) await DrawCaption(canvas, images, chartSize);
+            
+            var imageHeight = images[0].Img.Width;
+            var imageWidth = images[0].Img.Height;
             var offset = 0;
             var offsetTop = 0;
             var i = 1;
-            foreach (var image in images)
+            foreach (var item in images)
             {
-                if (image == null) continue;
-                canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
-                canvas.Flush();
-                offset += images[i].Width;
+                if (item.Img != null)
+                    canvas.DrawBitmap(item.Img, SKRect.Create(offset, offsetTop, imageWidth, imageHeight));
+                else 
+                    canvas.DrawRect(offset, offsetTop, imageWidth, imageHeight, new SKPaint {Color = SKColors.Black});
+
+                offset += imageWidth;
                 if (i == chartSize)
                 {
                     offset = 0;
-                    offsetTop += image.Height;
+                    offsetTop += imageHeight;
                     i = 1;
                     continue;
                 }
                 i++;
             }
+            canvas.Flush();
+ 
             var result = tempSurface.Snapshot().Encode(SKEncodedImageFormat.Png, 70).ToArray();
 
             tempSurface.Dispose();
-            foreach (var image in images)
+            foreach (var item in images)
             {
-                image?.Dispose();
+                item.Img?.Dispose();
             }
 
-            return Task.FromResult(result);
+            return result;
         }
 
-        private async Task<Dictionary<string, byte[]>> GetAlbumArt(
-            ChartSize size, ChartType type, string username, string span)
+        private static Task DrawCaption(SKCanvas canvas, List<(string Cap, SKBitmap Img)> images, int chartSize)
+        {
+            var textXOffset = images.First().Img.Width * chartSize + 20f;
+            var textYOffset = 40f;
+            var font = new SKPaint
+            {
+                TextSize = 12.0f,
+                IsAntialias = true,
+                Color = SKColors.White,
+                IsStroke = false,
+                Typeface = SKTypeface.FromFile("./Utilities/Roboto-Regular.ttf"),
+                LcdRenderText = true,
+                SubpixelText = true
+            };
+
+            var i = 1;
+            foreach (var item in images)
+            {
+                canvas.DrawText(item.Cap, textXOffset, textYOffset, font);
+                textYOffset += font.TextSize * 1.4f;
+                
+                if (i == chartSize)
+                {
+                    textYOffset += chartSize * 10f + 10;
+                    i = 1;
+                    continue;
+                }
+                i++;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task<List<(string Caption, byte[] Image)>> GetAlbumArt(
+            ChartSize size, ChartType type, string username, string span, bool caption)
         {
             var intSize = (int) size;
             intSize *= intSize;
-            var response = await lastFm.GetTopAsync(type, intSize, span, username);
-            var imageDictionary = new Dictionary<string, byte[]>(intSize);
+            var response = await lastFm.GetTopAsync((ListType) type, intSize, span, username);
+            var imageList = new List<(string Caption, byte[] Image)>(intSize);
 
             switch (type)
             {
@@ -110,13 +154,13 @@ namespace PlebBot.Services.Chart
                 }
 
                 var name = new StringBuilder();
+                if (response[i].artist != null) name.Append($"{response[i].artist.name} - ");
                 name.Append($"{response[i].name}");
-                if (response[i].artist != null) name.Append($"\n{response[i].artist.name}");
                 if (art == null) art = new byte[] { };
-                imageDictionary.Add(name.ToString(), art);
+                imageList.Add((name.ToString(), art));
             }
 
-            return imageDictionary;
+            return imageList;
         }
     }
 }

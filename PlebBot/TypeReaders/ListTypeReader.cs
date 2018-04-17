@@ -5,20 +5,24 @@ using PlebBot.Services.Chart;
 
 namespace PlebBot.TypeReaders
 {
-    public class ChartTypeReader : TypeReader
+    public class ListTypeReader : TypeReader
     {
         public override Task<TypeReaderResult> Read(ICommandContext context, string input, IServiceProvider services)
         {
-            ChartType type;
+            ListType type;
             switch (input.ToLowerInvariant())
             {
                 case "albums":
                 case "album":
-                    type = ChartType.Albums;
+                    type = ListType.Albums;
+                    break;
+                case "tracks":
+                case "track":
+                    type = ListType.Tracks;
                     break;
                 case "artists":
                 case "artist":
-                    type = ChartType.Artists;
+                    type = ListType.Artists;
                     break;
                 default:
                     return Task.FromResult(TypeReaderResult.FromError(

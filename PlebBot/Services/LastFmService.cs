@@ -4,9 +4,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PlebBot.Services.Chart;
+using PlebBot.TypeReaders;
 
 namespace PlebBot.Services
 {
@@ -24,8 +26,7 @@ namespace PlebBot.Services
             httpClient = client;
         }
 
-        public async Task<dynamic> GetTopAsync(
-            ChartType chart, int limit, string span = "", string username = "")
+        public async Task<dynamic> GetTopAsync(ListType chart, int limit, string span = "", string username = "")
         {
             if (!await CheckIfUserExistsAsync(username))
                 return errorEmbed.WithDescription(NotFound);
@@ -38,13 +39,13 @@ namespace PlebBot.Services
             span = await DetermineSpan(span);
             switch (chart)
             {
-                case ChartType.Artists:
+                case ListType.Artists:
                     response = await GetTopArtistsAsync(username, span, limit);
                     break;
-                case ChartType.Albums:
+                case ListType.Albums:
                     response = await GetTopAlbumsAsync(username, span, limit);
                     break;
-                case ChartType.Tracks:
+                case ListType.Tracks:
                     response = await GetTopTracksAsync(username, span, limit);
                     break;
                 default:
@@ -274,11 +275,19 @@ namespace PlebBot.Services
                     break;
                 case Category.Album:
                     if (query.Contains(" - ")) response = await GetAlbumInfoAsync(query);
-                    else response = null;
+                    else
+                    {
+                        var searchResult = await SearchLastFm(category, query);
+                        response = await GetAlbumInfoAsync($"{searchResult.artist} - {searchResult.name}");
+                    };
                     break;
                 case Category.Track:
                     if (query.Contains(" - ")) response = await GetTrackInfoAsync(query);
-                    else response = null;
+                    else
+                    {
+                        var searchResult = await SearchLastFm(category, query);
+                        response = await GetTrackInfoAsync($"{searchResult.artist} - {searchResult.name}");
+                    }
                     break;
                 default:
                     return null;
@@ -326,6 +335,16 @@ namespace PlebBot.Services
             query = query.Remove(dashIndex + 1, 1);
 
             return Task.FromResult((query.Substring(0, dashIndex), query.Substring(dashIndex + 1)));
+        }
+
+        private async Task<dynamic> SearchLastFm(Category searchType, string query)
+        {
+            var search = searchType.ToString().ToLower();
+            var url = $"http://ws.audioscrobbler.com/2.0/?method={search}.search&{search}={query}" +
+                      $"&api_key={lastFmKey}&format=json";
+            var searchResults = await GetLastFmData(url);
+
+            return searchResults.results[$"{search}matches"][search][0];
         }
     }
 
