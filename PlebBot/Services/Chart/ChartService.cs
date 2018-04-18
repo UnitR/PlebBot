@@ -4,9 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing;
-using System.Net.Mime;
-using Discord;
 using SkiaSharp;
 
 namespace PlebBot.Services.Chart
@@ -38,28 +35,49 @@ namespace PlebBot.Services.Chart
             var images = new List<(string Cap, SKBitmap Img)>(imageList.Count);
             images.AddRange(from image in imageList select (image.Caption, SKBitmap.Decode(image.Image)));
             
-            var height = images[0].Img.Height * chartSize;
-            var width = images[0].Img.Width * chartSize;
+            int imageHeight;
+            int imageWidth;
+            var template = images.FirstOrDefault(img => img.Img != null);
+            if (template.Img != null)
+            {
+                imageHeight = template.Img.Height;
+                imageWidth = template.Img.Width;
+            }
+            else
+            {
+                imageHeight = 300;
+                imageWidth = 300;
+            }               
             var widthExtension = 0;
-            if (caption) widthExtension = 400; //how much room there is for the text
-
-            var tempSurface = SKSurface.Create(new SKImageInfo(width + widthExtension, height));
+            if (caption) widthExtension = 200; //how much room there is for the text
+            var canvasHeight = imageHeight * chartSize;
+            var canvasWidth = imageWidth * chartSize + widthExtension;
+            
+            var tempSurface = SKSurface.Create(new SKImageInfo(canvasWidth + widthExtension, canvasHeight));
             var canvas = tempSurface.Canvas;
             canvas.Clear(SKColors.Black);
 
-            if (caption) await DrawCaption(canvas, images, chartSize);
+            if (caption) await DrawCaption(canvas, images, chartSize, imageHeight);
             
-            var imageHeight = images[0].Img.Width;
-            var imageWidth = images[0].Img.Height;
             var offset = 0;
             var offsetTop = 0;
             var i = 1;
             foreach (var item in images)
             {
-                if (item.Img != null)
-                    canvas.DrawBitmap(item.Img, SKRect.Create(offset, offsetTop, imageWidth, imageHeight));
-                else 
-                    canvas.DrawRect(offset, offsetTop, imageWidth, imageHeight, new SKPaint {Color = SKColors.Black});
+                var rect = SKRect.Create(offset, offsetTop, imageWidth, imageHeight);
+                
+                if (item.Img != null) canvas.DrawBitmap(item.Img, rect);
+                else
+                {
+                    var placeholder = SKBitmap.Decode("Utilities/unavailable.jpg");
+                    var paint = new SKPaint
+                    {
+                        IsAntialias = true,
+                        FilterQuality = SKFilterQuality.High
+                    };
+                    canvas.DrawBitmap(placeholder, rect, paint);
+                    placeholder.Dispose();
+                }
 
                 offset += imageWidth;
                 if (i == chartSize)
@@ -84,17 +102,17 @@ namespace PlebBot.Services.Chart
             return result;
         }
 
-        private static Task DrawCaption(SKCanvas canvas, List<(string Cap, SKBitmap Img)> images, int chartSize)
+        private static Task DrawCaption(SKCanvas canvas, List<(string Cap, SKBitmap Img)> images, int chartSize, int imageHeight)
         {
             var textXOffset = images.First().Img.Width * chartSize + 20f;
-            var textYOffset = 40f;
+            var textYOffset = imageHeight * 0.5f - 25f;
             var font = new SKPaint
             {
                 TextSize = 12.0f,
                 IsAntialias = true,
                 Color = SKColors.White,
                 IsStroke = false,
-                Typeface = SKTypeface.FromFile("./Utilities/Roboto-Regular.ttf"),
+                Typeface = SKTypeface.FromFile("Utilities/Roboto-Regular.ttf"),
                 LcdRenderText = true,
                 SubpixelText = true
             };
@@ -107,7 +125,8 @@ namespace PlebBot.Services.Chart
                 
                 if (i == chartSize)
                 {
-                    textYOffset += chartSize * 10f + 10;
+                    textYOffset -= chartSize * font.TextSize * 1.4f;
+                    textYOffset += imageHeight;
                     i = 1;
                     continue;
                 }

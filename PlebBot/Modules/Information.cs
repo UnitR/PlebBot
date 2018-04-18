@@ -59,7 +59,7 @@ namespace PlebBot.Modules
             await ReplyAsync("", embed: embed.Build());
         }
 
-        [Command("track")]
+        [Command("track", RunMode = RunMode.Async)]
         public async Task GetTrackInfo([Remainder] string query)
         {
             var response = await lastFm.GetInformationAsync(Category.Track, query);
