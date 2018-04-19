@@ -8,7 +8,8 @@ using PlebBot.Services;
 
 namespace PlebBot.Modules
 {
-    [Group("info")]
+    [Group("Information")]
+    [Alias("Info")]
     public class Information : BaseModule
     {
         private readonly LastFmService lastFm;

@@ -6,8 +6,8 @@ using PlebBot.Data.Repository;
 
 namespace PlebBot.Modules
 {
-    [Group("rym")]
-    [Alias("RYM", "rateyourmusic")]
+    [Group("Rate Your Music")]
+    [Alias("RYM")]
     public class RYM : BaseModule
     {
         private readonly Repository<User> userRepo;

@@ -9,6 +9,7 @@ using PlebBot.Services;
 
 namespace PlebBot.Modules
 {
+    [Name("Miscellaneous")]
     public class Miscellaneous : BaseModule
     {
         [Command("ping")]

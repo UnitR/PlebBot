@@ -9,7 +9,7 @@ using PlebBot.TypeReaders;
 
 namespace PlebBot.Modules
 {
-    [Group("chart")]
+    [Group("Chart")]
     public class Chart : BaseModule
     {
         private readonly HttpClient httpClient;
@@ -23,7 +23,8 @@ namespace PlebBot.Modules
 
         [Command("set", RunMode = RunMode.Async)]
         [Summary("Link a chart to your account.")]
-        public async Task SetChart(string chartLink = "")
+        public async Task SetChart(
+            [Summary("The link to your chart. Either use this parameter or send the chart image with the message.")] string chartLink = "")
         {
             if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
@@ -73,7 +74,7 @@ namespace PlebBot.Modules
             }
         }
 
-        [Group("top")]
+        [Group("Top")]
         public class TopCharts : Chart
         {
             public TopCharts(HttpClient client, ChartService service)
@@ -82,8 +83,12 @@ namespace PlebBot.Modules
             }
 
             [Command(RunMode = RunMode.Async)]
-            public async Task Top(ChartType type, string span, 
-                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size, string caption = "")
+            [Summary("Send a chart based on your last.fm scrobbles.")]
+            public async Task Top([Summary("The type of the chart. Either albums or artists.")] ChartType type, 
+                [Summary("The time span for the chart. Overall, year, 6month, 3month, month or week.")] string span, 
+                [OverrideTypeReader(typeof(ChartSizeReader))] [Summary("Chart size. Supported sizes are 3x3, 4x4 and 5x5.")] ChartSize size, 
+                [Summary("Pass this argument if you want to include names next to your chart. Accepted values are `-c` and `-t`. Currently there is no difference between them.")]
+                string caption = "")
             {
                 if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 

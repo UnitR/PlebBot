@@ -1,119 +1,127 @@
 ﻿using System;
-using Discord;
+using System.Collections.Generic;
 using Discord.Commands;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace PlebBot.Modules
 {
-    //TODO: Completely redesign this module
+    [Group("Help")]
     public class Help : BaseModule
     {
-        private readonly CommandService service;
+        private readonly CommandService commnadService;
 
         public Help(CommandService service)
         {
-            this.service = service;
+            commnadService = service;
         }
 
-        [Command("help")]
-        public async Task HelpAsync()
+        [Command(RunMode = RunMode.Async)]
+        public async Task SendHelp()
         {
-            var builder = new EmbedBuilder()
+            var channel = await Context.User.GetOrCreateDMChannelAsync();
+            var text = await BuildHelpText();
+            if (text is string[] segments)
+                foreach (var segment in segments)
+                    await channel.SendMessageAsync(segment);
+            else
             {
-                Color = Color.Green,
-                Title = "Available commands:"
-            };
-
-            foreach (var module in service.Modules)
-            {
-                if (String.Equals(module.Name, "help", StringComparison.CurrentCultureIgnoreCase)) continue;
-
-                string description = null;
-                foreach (var cmd in module.Commands)
-                {
-                    var result = await cmd.CheckPreconditionsAsync(Context);
-                    if (!result.IsSuccess) continue;
-
-                    description += $"{cmd.Aliases.First()} ";
-                    if (cmd.Parameters != null)
-                    {
-                        var parameters = cmd.Parameters.ToList();
-                        foreach (var param in parameters)
-                        {
-                            if (param.IsOptional)
-                                description += $"({param.Name}) ";
-                            else
-                                description += $"[{param.Name}] ";
-                        }
-                    }
-                    description += $"- *{cmd.Summary}*\n";
-                }
-
-                if (!string.IsNullOrWhiteSpace(description) && module.Name != "Help")
-                {
-                    builder.AddField(x =>
-                    {
-                        x.Name = module.Name;
-                        x.Value = description;
-                        x.IsInline = false;
-                    });
-                }
+                string helpText = text.ToString();
+                await channel.SendMessageAsync(helpText);
             }
-
-            builder.AddField(
-                "Additional help:", 
-                "For more help regarding a command use `help [command name]` without the brackets.");
-            await ReplyAsync("", embed: builder.Build());
         }
 
-        [Command("help")]
-        public async Task HelpAsync(params string[] command)
+        [Command(RunMode = RunMode.Async)]
+        public async Task CommandHelp([Remainder] string commandName)
         {
-            var cmd = "";
-            foreach (var item in command)
+            var commandSearch = commnadService.Search(Context, commandName);
+            
+            if (!commandSearch.IsSuccess)
             {
-                cmd += $"{item} ";
-            }
-            cmd = cmd.Remove(cmd.Length - 1);
-
-            var builder = new EmbedBuilder();
-            var result = service.Search(Context, cmd);
-
-            if (!result.IsSuccess)
-            {
-                await Error($"\"Sorry, I couldn\'t find a command like `{cmd}`");
+                await Error($"No command with the name '{commandName} was found.");
                 return;
             }
 
-            builder.Color = Color.Green;
-            foreach (var match in result.Commands)
+            var helpBuilder = new StringBuilder();
+            foreach (var match in commandSearch.Commands)
             {
-                if (match.Command.Name != cmd && !match.Command.Aliases.Contains(cmd)) continue;
-
-                var matched = match.Command;
-                var parameters = "";
-
-                if (matched.Parameters.Count > 0)
-                {
-                    parameters = "Parameters:\n";
-                    foreach (var item in matched.Parameters)
-                    {
-                        parameters += $"\t{item.Name} - *{item.Summary}*\n";
-                    }
-                }
-
-                builder.AddField(x =>
-                {
-                    x.Name = $"{matched.Aliases.First()}";
-                    x.Value = parameters +
-                              "Summary:\n" +
-                              $"\t{matched.Summary}.\n\n\n";
-                    x.IsInline = false;
-                });
+                if(match.Command.Name != commandName) continue;
+                var decription = await CommandDetails(match.Command);
+                helpBuilder.AppendLine(decription);
             }
 
-            await ReplyAsync("", embed: builder.Build());
+            await ReplyAsync(helpBuilder.ToString());
+        }
+
+        private async Task<dynamic> BuildHelpText()
+        {
+            var textBuilder = new StringBuilder();
+            var submoduleText = "";
+
+            var modules = commnadService.Modules.Where(m => m.Name != "Help" && m.Name != "BaseModule");
+            foreach (var module in modules)
+            {
+                textBuilder.AppendLine($"```{module.Name}``````");
+
+                var shownCommands = new List<string>(module.Commands.Count);
+                foreach (var command in module.Commands)
+                {
+                    var commandName = command.Name.ToLowerInvariant();
+                    if (shownCommands.Contains(commandName)) continue;
+                    textBuilder.AppendLine($"{commandName} - {command.Summary}");
+                    shownCommands.Add(commandName);
+                }
+
+                if (module.Submodules.Any())
+                    foreach (var submodule in module.Submodules)
+                    foreach (var command in submodule.Commands)
+                        submoduleText = $"{module.Name.ToLowerInvariant()} " +
+                                        $"{command.Name.ToLowerInvariant()} - {command.Summary}";
+
+                if (submoduleText != String.Empty) textBuilder.AppendLine(submoduleText);
+                textBuilder.AppendLine("```\n");
+                submoduleText = "";
+            }
+            textBuilder.AppendLine("**For information regarding a speficic command use `help command_name`**");
+
+            var text = textBuilder.ToString();
+            if (text.Length < 2000) return text;
+            var segments = await SegmentText(text);
+            return segments;
+        }
+
+        private static Task<string[]> SegmentText(string text)
+        {
+            var segments = new List<string>();
+            var length = text.Length;
+            while (length > 0)
+            {
+                var lim = length >= 2000 ? 2000 : text.Length - 1;
+                segments.Add(text.Substring(0, lim));
+                text = text.Remove(0, lim);
+                length -= lim;
+            }
+
+            return Task.FromResult(segments.ToArray());
+        }
+
+        private static Task<string> CommandDetails(CommandInfo command)
+        {
+            var text = new StringBuilder();
+            text.AppendLine($"`{command.Name.ToLowerInvariant()}` - *{command.Summary}*");
+
+            if (command.Parameters.Any())
+            {
+                text.AppendLine("Parameters:");
+                foreach (var param in command.Parameters)
+                {
+                    var type = param.IsOptional ? "(optional)" : "(required)";
+                    text.AppendLine($"\t{type} {param.Name} - *{param.Summary}*");
+                }
+            }
+            
+            return Task.FromResult(text.ToString());
         }
     }
 }

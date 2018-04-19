@@ -11,7 +11,7 @@ using PlebBot.Data.Repository;
 namespace PlebBot.Modules
 {
     [Group("Roles")]
-    [Alias("role")]
+    [Alias("Role")]
     [Summary("Manage server roles")]
     public class Roles : BaseModule
     {

@@ -9,6 +9,7 @@ using PlebBot.Services.Chart;
 
 namespace PlebBot.Modules
 {
+    [Name("Last.Fm")]
     public class LastFm : BaseModule
     {
         private readonly LastFmService lastFm;
