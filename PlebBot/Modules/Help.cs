@@ -20,23 +20,19 @@ namespace PlebBot.Modules
         [Command(RunMode = RunMode.Async)]
         public async Task SendHelp()
         {
-<<<<<<< HEAD
-            var builder = new EmbedBuilder
-=======
             var channel = await Context.User.GetOrCreateDMChannelAsync();
             var text = await BuildHelpText();
             if (text is string[] segments)
                 foreach (var segment in segments)
                     await channel.SendMessageAsync(segment);
             else
->>>>>>> 776f1abf5be3de3f8b4962bec1f1f94929362f46
             {
                 string helpText = text.ToString();
                 await channel.SendMessageAsync(helpText);
             }
 
             await ReplyAsync(
-                ":mailbox: | Bot help has been sent in your DMs. If you need further help with a command use `help command` where command is the command name.");
+                ":mailbox: | Bot help has been sent to your DMs. If you need further help with a command, use `help command`, where command is the command name.");
         }
 
         [Command(RunMode = RunMode.Async)]
