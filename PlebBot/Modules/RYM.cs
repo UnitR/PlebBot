@@ -6,8 +6,8 @@ using PlebBot.Data.Repository;
 
 namespace PlebBot.Modules
 {
-    [Group("rym")]
-    [Alias("RYM", "rateyourmusic")]
+    [Group("Rate Your Music")]
+    [Alias("RYM")]
     public class RYM : BaseModule
     {
         private readonly Repository<User> userRepo;
@@ -18,6 +18,7 @@ namespace PlebBot.Modules
         }
 
         [Command("set")]
+        [Name("rym set")]
         [Summary("Link your Rate Your Music account")]
         public async Task SetUsername([Summary("Your RYM username")] string username)
         {
@@ -44,6 +45,7 @@ namespace PlebBot.Modules
         }
 
         [Command]
+        [Name("rym")]
         [Summary("Send a link to your Rate Your Music profile")]
         public async Task LinkProfile()
         {

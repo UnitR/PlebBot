@@ -9,6 +9,7 @@ using PlebBot.Services;
 
 namespace PlebBot.Modules
 {
+    [Name("Miscellaneous")]
     public class Miscellaneous : BaseModule
     {
         [Command("ping")]
@@ -51,14 +52,6 @@ namespace PlebBot.Modules
 
             if (mention != String.Empty) await ReplyAsync($"Bless you, {mention} :pray:");
             else if (username != String.Empty) await ReplyAsync($"Bless you, {username} :pray:");
-        }
-
-        [Priority(1)]
-        [Command("bless")]
-        [Summary("Blessed be the rains down in Africa")]
-        public async Task BlessUser([Summary("User to bless the rains with")] SocketUser user)
-        {
-            await ReplyAsync($"Bless you, {user.Mention} :pray:");
         }
 
         [Command("choose")]

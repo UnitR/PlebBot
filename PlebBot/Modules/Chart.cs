@@ -9,7 +9,7 @@ using PlebBot.TypeReaders;
 
 namespace PlebBot.Modules
 {
-    [Group("chart")]
+    [Group("Chart")]
     public class Chart : BaseModule
     {
         private readonly HttpClient httpClient;
@@ -23,7 +23,10 @@ namespace PlebBot.Modules
 
         [Command("set", RunMode = RunMode.Async)]
         [Summary("Link a chart to your account.")]
-        public async Task SetChart(string chartLink = "")
+        public async Task SetChart(
+            [Summary(
+                "The link to your chart. Either use this parameter or send the chart image with the command message.")]
+            string chartLink = "")
         {
             if (!await Preconditions.Preconditions.InChartposting(Context)) return;
 
@@ -48,11 +51,12 @@ namespace PlebBot.Modules
             }
             catch (InvalidOperationException)
             {
-                await Error("Your chart could not be downloaded. Check the chart image or link.");
+                await Error("Your chart could not be downloaded. Check the provided source.");
             }
         }
 
         [Command(RunMode = RunMode.Async)]
+        [Name("chart")]
         [Summary("Send your chart")]
         public async Task SendChart()
         {
@@ -72,43 +76,45 @@ namespace PlebBot.Modules
             }
         }
 
-        [Group("top")]
-        public class TopCharts : Chart
+        [Command("top", RunMode = RunMode.Async)]
+        [Name("chart top")]
+        [Summary("Send a chart based on your last.fm scrobbles.")]
+        public async Task Top(
+            [Summary("The type of the chart. Either albums or artists.")]
+            ChartType type,
+            [Summary("The time span for the chart. Overall, year, 6month, 3month, month or week.")]
+            string span,
+            [OverrideTypeReader(typeof(ChartSizeReader))] [Summary("Chart size. Supported sizes are 3x3, 4x4 and 5x5.")]
+            ChartSize size,
+            [Summary(
+                "Pass this argument if you want to include names next to your chart. Accepted values are `-c` and `-t`. Currently there is no difference between them.")]
+            string caption = "")
         {
-            public TopCharts(HttpClient client, ChartService service)
-                : base(client, service)
+            if (!await Preconditions.Preconditions.InChartposting(Context)) return;
+
+            var user = await FindUserAsync();
+            if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
+
+            caption = caption.ToLowerInvariant();
+            var withCaption = caption == "captions" || caption == "-c" || caption == "-t" || caption == "titles";
+
+            var result = await chartService.GetChartAsync(size, type, user.LastFm, span, withCaption);
+
+            if (result == null)
             {
+                await Error(
+                    "Something went wrong obtaining the chart information. Check the given parameters and try again");
+                return;
             }
 
-            [Command(RunMode = RunMode.Async)]
-            public async Task Top(ChartType type, string span, 
-                [OverrideTypeReader(typeof(ChartSizeReader))] ChartSize size, string caption = "")
+            using (Stream stream = new MemoryStream(result))
             {
-                if (!await Preconditions.Preconditions.InChartposting(Context)) return;
-
-                var user = await FindUserAsync();
-                if (user.LastFm == null) await Error("You'll need to link your last.fm profile first.");
-
-                caption = caption.ToLowerInvariant();
-                var withCaption = caption == "captions" || caption == "-c" || caption == "-t" || caption == "titles";
-                    
-                var result = await chartService.GetChartAsync(size, type, user.LastFm, span, withCaption);
-
-                if (result == null)
-                {
-                    await Error(
-                        "Something went wrong obtaining the chart information. Check the given parameters and try again");
-                    return;
-                }
-                
-                using (Stream stream = new MemoryStream(result))
-                {
-                    await Context.Channel.SendFileAsync(
-                        stream, 
-                        $"{Context.User.Username}_top_{type}_{size}.png", 
-                        $"Top {type.ToString().ToLowerInvariant()} for {Context.User.Username}:");
-                }
+                await Context.Channel.SendFileAsync(
+                    stream,
+                    $"{Context.User.Username}_top_{type}_{size}.png",
+                    $"Top {type.ToString().ToLowerInvariant()} for {Context.User.Username}:");
             }
         }
     }
 }
+

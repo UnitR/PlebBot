@@ -7,6 +7,7 @@ using PlebBot.Services.Weather;
 
 namespace PlebBot.Modules
 {
+    [Name("Weather")]
     public class Weather : BaseModule
     {
         private readonly WeatherService service;

@@ -11,7 +11,7 @@ using PlebBot.Data.Repository;
 namespace PlebBot.Modules
 {
     [Group("Roles")]
-    [Alias("role")]
+    [Alias("Role")]
     [Summary("Manage server roles")]
     public class Roles : BaseModule
     {
@@ -25,6 +25,7 @@ namespace PlebBot.Modules
         }
 
         [Command]
+        [Name("roles")]
         [Summary("Get a list of the self-assignable roles")]
         public async Task GetAssignable()
         {
@@ -53,6 +54,7 @@ namespace PlebBot.Modules
 
         [Command]
         [Alias("get")]
+        [Name("roles get")]
         [Summary("Get a self-assignable role")]
         public async Task GetRole([Summary("The name of the role you wish to obtain")] string role)
         {
@@ -96,6 +98,7 @@ namespace PlebBot.Modules
         }
 
         [Command("remove")]
+        [Name("roles remove")]
         [Summary("Removes a role from you")]
         public async Task RemoveRole([Summary("The name of the role you want to remove")] string role)
         {
@@ -124,6 +127,7 @@ namespace PlebBot.Modules
 
 
         [Command("self")]
+        [Name("roles self")]
         [Summary("Make a role self-assignable")]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task SetAssignable(
@@ -163,6 +167,7 @@ namespace PlebBot.Modules
         }
 
         [Command("remove")]
+        [Name("roles remove")]
         [Summary("Remove a role from the self-assignable list")]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task RemoveAssignable([Summary("The role whose name you wish to remove")] string role)
