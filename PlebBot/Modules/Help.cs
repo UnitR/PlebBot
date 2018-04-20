@@ -30,23 +30,27 @@ namespace PlebBot.Modules
                 string helpText = text.ToString();
                 await channel.SendMessageAsync(helpText);
             }
+
+            await ReplyAsync(
+                ":mailbox: | Bot help has been sent in your DMs. If you need further help with a command use `help command` where command is the command name.");
         }
 
         [Command(RunMode = RunMode.Async)]
         public async Task CommandHelp([Remainder] string commandName)
         {
             var commandSearch = commnadService.Search(Context, commandName);
-            
-            if (!commandSearch.IsSuccess)
+
+            if (!commandSearch.IsSuccess || commandSearch.Commands
+                    .FirstOrDefault(c => c.Command.Name == commandName || c.Alias == commandName).Command == null)
             {
-                await Error($"No command with the name '{commandName} was found.");
+                await Error($"No command with the name '{commandName}' was found.");
                 return;
             }
 
             var helpBuilder = new StringBuilder();
             foreach (var match in commandSearch.Commands)
             {
-                if(match.Command.Name != commandName) continue;
+                if(!match.Command.Name.Contains(commandName)) continue;
                 var decription = await CommandDetails(match.Command);
                 helpBuilder.AppendLine(decription);
             }

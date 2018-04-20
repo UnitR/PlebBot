@@ -49,9 +49,9 @@ namespace PlebBot.Modules
         [Command("fm top artists", RunMode = RunMode.Async)]
         [Summary("Get the top artists for a user")]
         public async Task TopArtists(
-            [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Time span: week, month, 3month, 6month, year, overall. Default is overall")] string span = "",
             [Summary("Number of artists to show. Maximum 25. Default is 10.")] int limit = 10,
-            [Summary("Your last.fm username")] string username = "")
+            [Summary("last.fm username")] string username = "")
             => await SendChartAsync(ListType.Artists, limit, span, username);
 
         [Priority(1)]
@@ -63,9 +63,9 @@ namespace PlebBot.Modules
         [Command("fm top albums", RunMode = RunMode.Async)]
         [Summary("Get the top albums for a user")]
         public async Task TopAlbums(
-            [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
+            [Summary("Time span: week, month, 3month, 6month, year, overall. Default is overall")] string span = "",
             [Summary("Number of albums to show. Maximum 50. Default is 10.")] int limit = 10,
-            [Summary("Your last.fm username")] string username = "")
+            [Summary("last.fm username")] string username = "")
             => await SendChartAsync(ListType.Albums, limit, span, username);
 
         [Priority(1)]
@@ -79,7 +79,7 @@ namespace PlebBot.Modules
         public async Task TopTracks(
             [Summary("Time span: week, month, year, overall. Default is overall")] string span = "",
             [Summary("Number of tracks to show. Maximum 50. Default is 10.")] int limit = 10,
-            [Summary("Your last.fm username")] string username = "")
+            [Summary("last.fm username")] string username = "")
             => await SendChartAsync(ListType.Tracks, limit, span, username);
 
         [Priority(1)]

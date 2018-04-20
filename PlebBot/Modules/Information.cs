@@ -20,7 +20,9 @@ namespace PlebBot.Modules
         }
 
         [Command("artist", RunMode = RunMode.Async)]
-        public async Task SendArtistInfo([Remainder] string name)
+        [Name("info artist")]
+        [Summary("Get information for an artist")]
+        public async Task SendArtistInfo([Summary("Name of the artist you want info for")][Remainder] string name)
         {
             var response = await lastFm.GetInformationAsync(Category.Artist, name);
 
@@ -39,9 +41,11 @@ namespace PlebBot.Modules
         }
 
         [Command("album", RunMode = RunMode.Async)]
-        public async Task SendAlbumInfo([Remainder] string query)
+        [Name("info album")]
+        [Summary("Get information for an album")]
+        public async Task SendAlbumInfo([Summary("Name of the album you want info for")][Remainder] string name)
         {
-            var response = await lastFm.GetInformationAsync(Category.Album, query);
+            var response = await lastFm.GetInformationAsync(Category.Album, name);
 
             if (response == null)
             {
@@ -61,9 +65,11 @@ namespace PlebBot.Modules
         }
 
         [Command("track", RunMode = RunMode.Async)]
-        public async Task GetTrackInfo([Remainder] string query)
+        [Name("info track")]
+        [Summary("Get information for a track")]
+        public async Task GetTrackInfo([Summary("Name of the track you want info for.")][Remainder] string name)
         {
-            var response = await lastFm.GetInformationAsync(Category.Track, query);
+            var response = await lastFm.GetInformationAsync(Category.Track, name);
 
             if (response == null)
             {
