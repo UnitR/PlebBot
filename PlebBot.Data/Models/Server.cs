@@ -16,5 +16,7 @@ namespace PlebBot.Data.Models
         public string Prefix { get; set; }
 
         public ICollection<Role> Roles { get; set; }
+
+        public bool LogEnabled { get; set; }
     }
 }

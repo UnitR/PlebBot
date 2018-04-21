@@ -155,5 +155,20 @@ namespace PlebBot.Tests
             
             Assert.AreEqual(expected, actual, "Improperly formatted top.");
         }
+
+        [TestMethod]
+        public void EnableLogging()
+        {
+            var serverRepo = new Repository<Server>();
+            const long serverId = (long) 238003175381139456;
+            var server = serverRepo.FindByDiscordId(serverId).Result;
+            var isLogging = server.LogEnabled;
+            var expected = !isLogging;
+            serverRepo.UpdateFirst("LogEnabled", expected, "Id", server.Id);
+            server = serverRepo.FindByDiscordId(serverId).Result;
+            var actual = server.LogEnabled;
+            
+            Assert.AreEqual(expected, actual);
+        }
     }
 }

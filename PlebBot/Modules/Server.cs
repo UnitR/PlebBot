@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repository;
@@ -25,11 +26,26 @@ namespace PlebBot.Modules
         public async Task ChangePrefix([Summary("The prefix you want to use")] string prefix)
         {
             var server = await serverRepo.FindByDiscordId((long) Context.Guild.Id);
-            if (server != null)
+            await serverRepo.UpdateFirst("Prefix", prefix, "Id", server.Id);
+            await Success("Successfully updated the prefix for the server.");
+        }
+
+        [Command("log")]
+        [Summary("Enable logging for the server")]
+        [ManageServer]
+        public async Task EndableLogging([Summary("Channel in which the logging will occur")] ITextChannel channel = null)
+        {
+            var server = await serverRepo.FindByDiscordId((long) Context.Guild.Id);
+            
+            if (!server.LogEnabled && channel == null)
             {
-                await serverRepo.UpdateFirst("Prefix", prefix, "Id", server.Id);
-                await Success("Successfully updated the prefix for the server.");
+                await Error("No channel provided.");
+                return;
             }
+            
+            await serverRepo.UpdateFirst("LogEnabled", !server.LogEnabled, "Id", server.Id);
+            var action = !server.LogEnabled ? "enabled" : "disabled";
+            await Success($"Logging {action}.");
         }
     }
 }
