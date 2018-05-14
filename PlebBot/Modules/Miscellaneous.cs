@@ -29,29 +29,29 @@ namespace PlebBot.Modules
                 return;
             }
 
-            var mention = "";
-            username = username.ToLowerInvariant();
-
-            if (username == "pleb") mention = @"<@287097793514831873>";
-            else
+            try 
             {
-                foreach (var user in Context.Guild.Users)
+                var mention = "";
+                username = username.ToLowerInvariant();
+    
+                if (username == "pleb") mention = @"<@287097793514831873>";
+                else
                 {
-                    if (user.Username.ToLowerInvariant().Contains(username))
+                    foreach (var user in Context.Guild.Users)
                     {
+                        if (user.Username.ToLowerInvariant().Contains(username))
+                        {
+                            mention = user.Mention;
+                            break;
+                        }
+
+                        if (user.Nickname == null || !user.Nickname.ToLowerInvariant().Contains(username)) continue;
+
                         mention = user.Mention;
                         break;
                     }
-
-                    if (user.Nickname == null || !user.Nickname.ToLowerInvariant().Contains(username)) continue;
-
-                    mention = user.Mention;
-                    break;
                 }
-            }
 
-            try 
-            {
                 if (mention != String.Empty) await ReplyAsync($"Bless you, {mention} :pray:");
                 else if (username != String.Empty) await ReplyAsync($"Bless you, {username} :pray:");
             }
