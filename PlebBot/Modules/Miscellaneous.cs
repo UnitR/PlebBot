@@ -50,8 +50,15 @@ namespace PlebBot.Modules
                 }
             }
 
-            if (mention != String.Empty) await ReplyAsync($"Bless you, {mention} :pray:");
-            else if (username != String.Empty) await ReplyAsync($"Bless you, {username} :pray:");
+            try 
+            {
+                if (mention != String.Empty) await ReplyAsync($"Bless you, {mention} :pray:");
+                else if (username != String.Empty) await ReplyAsync($"Bless you, {username} :pray:");
+            }
+            catch (Exception) 
+            {
+                await ReplyAsync ($"Bless :pray:");
+            }
         }
 
         [Command("choose")]
