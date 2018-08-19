@@ -166,8 +166,8 @@ namespace PlebBot.Modules
 
         }
 
-        [Command("remove")]
-        [Name("roles remove")]
+        [Command("removeself")]
+        [Name("roles remove self")]
         [Summary("Remove a role from the self-assignable list")]
         [RequireUserPermission(GuildPermission.ManageRoles)]
         public async Task RemoveAssignable([Summary("The role whose name you wish to remove")] string role)
