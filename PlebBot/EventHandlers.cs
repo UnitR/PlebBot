@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using PlebBot.Data.Models;
 using PlebBot.Data.Repository;
+using System.Threading;
 
 namespace PlebBot
 {
@@ -28,7 +29,10 @@ namespace PlebBot
             
             if(!result.IsSuccess && result.ErrorReason.Contains("Timeout"))
             {
-                await context.Channel.SendMessageAsync("Slow down a little.");
+                var errorMessage = await context.Channel.SendMessageAsync("Slow down a little.");
+                Thread.Sleep(5000);
+                await errorMessage.DeleteAsync();
+                await message.DeleteAsync();
             }
 
             commands.Log += msg =>

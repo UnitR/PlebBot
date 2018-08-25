@@ -22,7 +22,7 @@ namespace PlebBot.Modules
             userRepo = repo;
         }
 
-        [Command("fm", RunMode = RunMode.Async), Ratelimit(1, 5, Measure.Minutes)]
+        [Command("fm", RunMode = RunMode.Async), Ratelimit(1, 5, Measure.Minutes, false, true)]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
         {
