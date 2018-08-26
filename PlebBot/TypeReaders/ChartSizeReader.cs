@@ -7,7 +7,7 @@ namespace PlebBot.TypeReaders
 {
     public class ChartSizeReader : TypeReader
     {
-        public override Task<TypeReaderResult> Read(ICommandContext context, string input, IServiceProvider services)
+        public override Task<TypeReaderResult> ReadAsync(ICommandContext context, string input, IServiceProvider services)
         {
             ChartSize size;
             switch (input)

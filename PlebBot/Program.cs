@@ -60,6 +60,7 @@ namespace PlebBot
             client.JoinedGuild += HandleJoinGuildAsync;
             client.LeftGuild += HandleLeaveGuildAsync;
             client.MessageReceived += HandleCommandAsync;
+            commands.CommandExecuted += HandleCommandExecuted;
             await commands.AddModulesAsync(Assembly.GetEntryAssembly());
         }
 

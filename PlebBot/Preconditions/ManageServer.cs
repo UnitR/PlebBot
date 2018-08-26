@@ -8,7 +8,7 @@ namespace PlebBot.Preconditions
 {
     internal class ManageServer : PreconditionAttribute
     {
-        public override Task<PreconditionResult> CheckPermissions(ICommandContext context, CommandInfo command,
+        public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command,
             IServiceProvider services)
         {
             var user = context.User as SocketGuildUser;

@@ -58,7 +58,7 @@ namespace PlebBot.Modules
                     embed = await service.NoInformation();
                 }
 
-                await ReplyAsync("", embed: embed);
+                await ReplyAsync("", embed: embed.Build());
                 return;
             }
 

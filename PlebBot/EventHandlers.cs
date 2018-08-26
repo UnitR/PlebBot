@@ -27,14 +27,6 @@ namespace PlebBot
 
             var result = await commands.ExecuteAsync(context, argPos, ConfigureServices(services));
             
-            if(!result.IsSuccess && result.ErrorReason.Contains("Timeout"))
-            {
-                var errorMessage = await context.Channel.SendMessageAsync("Slow down a little.");
-                Thread.Sleep(5000);
-                await errorMessage.DeleteAsync();
-                await message.DeleteAsync();
-            }
-
             commands.Log += msg =>
             {
                 if (!(msg.Exception is CommandException ex)) return Task.CompletedTask;
@@ -46,6 +38,18 @@ namespace PlebBot
                 return Task.CompletedTask;
             };
         }
+
+        private async Task HandleCommandExecuted(CommandInfo commandInfo, ICommandContext context, IResult result)
+        {
+            if(!result.IsSuccess && result.ErrorReason.Contains("Timeout"))
+            {
+                var errorMessage = await context.Channel.SendMessageAsync("Slow down a little.");
+                Thread.Sleep(3500);
+                await errorMessage.DeleteAsync();
+                await context.Message.DeleteAsync();
+            }
+        }
+
 
         //[Conditional("DEBUG")]
         //private static void Error(IResult result, ICommandContext context)

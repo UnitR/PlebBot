@@ -6,7 +6,7 @@ using PlebBot.Data.Models;
 using PlebBot.Data.Repository;
 using PlebBot.Services;
 using PlebBot.Services.Chart;
-using Discord.Addons.Preconditions;
+using PlebBot.Preconditions;
 
 namespace PlebBot.Modules
 {
@@ -22,7 +22,7 @@ namespace PlebBot.Modules
             userRepo = repo;
         }
 
-        [Command("fm", RunMode = RunMode.Async), Ratelimit(1, 5, Measure.Minutes, false, true)]
+        [Command("fm", RunMode = RunMode.Async), RateLimit(1, 5, Measure.Minutes, RatelimitFlags.ApplyPerGuild)]
         [Summary("Show what you're listening to")]
         public async Task Scrobble([Summary("Your last.fm username")] string username = "")
         {

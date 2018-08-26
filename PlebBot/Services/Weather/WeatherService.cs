@@ -90,15 +90,15 @@ namespace PlebBot.Services.Weather
             embed.WithTitle($"Current weather in {observation.display_location.full}");
             embed.WithUrl(observation.forecast_url.ToString());
             embed.WithThumbnailUrl(iconUrl);
-            embed.AddInlineField(
+            embed.AddField(
                 "Weather Condition:",
                 $"{observation.weather} |  " +
                 $"Actual: {observation.temp_c}°C ({observation.temp_f}°F)\n" +
                 $"Feels like: {observation.feelslike_c}°C ({observation.feelslike_f}°F) | " +
                 $"High: {forecast.high.celsius}°C ({forecast.high.fahrenheit}°F) | " +
-                $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)");
-            embed.AddInlineField("Wind:", windText);
-            embed.AddInlineField("Humidity:", $"{observation.relative_humidity}");
+                $"Low: {forecast.low.celsius}°C ({forecast.low.fahrenheit}°F)", true);
+            embed.AddField("Wind:", windText, true);
+            embed.AddField("Humidity:", $"{observation.relative_humidity}", true);
             embed.WithColor(237, 126, 0);
 
             return embed;
