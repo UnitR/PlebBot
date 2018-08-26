@@ -92,10 +92,15 @@ namespace PlebBot.Preconditions
             }
             else
             {
+                if (context.Guild.Id != 238003175381139456)
+                {
+                    await context.Channel.SendMessageAsync("Slow down a little.");
+                    return PreconditionResult.FromError("Timeout");
+                }
+
                 var botChannel = await context.Client.GetChannelAsync(314664843892228096) as ITextChannel;
                 await botChannel.SendMessageAsync($"{context.User.Mention}, slow down a little. The command has a cooldown of {FormatTimeSpan(_invokeLimitPeriod)}");
                 await context.Message.DeleteAsync();
-
                 return PreconditionResult.FromError("Timeout");
             }
         }
