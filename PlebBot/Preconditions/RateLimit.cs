@@ -92,10 +92,10 @@ namespace PlebBot.Preconditions
             }
             else
             {
-                var errResponse = await context.Channel.SendMessageAsync("Slow down a little.");
-                Thread.Sleep(5000);
-                await errResponse.DeleteAsync();
+                var botChannel = await context.Client.GetChannelAsync(314664843892228096) as ITextChannel;
+                await botChannel.SendMessageAsync($"{context.User.Mention}, slow down a little. The command has a cooldown of {FormatTimeSpan(_invokeLimitPeriod)}");
                 await context.Message.DeleteAsync();
+
                 return PreconditionResult.FromError("Timeout");
             }
         }
@@ -109,6 +109,26 @@ namespace PlebBot.Preconditions
             {
                 FirstInvoke = timeStarted;
             }
+        }
+
+        private static string FormatTimeSpan(TimeSpan span)
+        {
+            TimeSpan t = TimeSpan.FromSeconds(span.TotalSeconds);
+            string answer;
+            if (t.TotalMinutes < 1.0)
+            {
+                answer = String.Format("{0}s", t.Seconds);
+            }
+            else if (t.TotalHours < 1.0)
+            { 
+                answer = String.Format("{0}m {1:D2}s", t.Minutes, t.Seconds);
+            }
+            else // more than 1 hour
+            {
+                answer = String.Format("{0}h {1:D2}m {2:D2}s", (int)t.TotalHours, t.Minutes, t.Seconds);
+            }
+
+            return answer;
         }
     }
 
