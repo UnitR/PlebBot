@@ -70,7 +70,7 @@ namespace PlebBot.Preconditions
             CommandInfo command,
             IServiceProvider services)
         {
-            if (_noLimitInDMs && context.Channel is IPrivateChannel)
+            if (_noLimitInDMs && context.Channel is IPrivateChannel || context.Guild.Id != 238003175381139456)
                 return PreconditionResult.FromSuccess();
 
             if (_noLimitForAdmins && context.User is IGuildUser gu && gu.GuildPermissions.Administrator)
@@ -92,12 +92,6 @@ namespace PlebBot.Preconditions
             }
             else
             {
-                if (context.Guild.Id != 238003175381139456)
-                {
-                    await context.Channel.SendMessageAsync("Slow down a little.");
-                    return PreconditionResult.FromError("Timeout");
-                }
-
                 var botChannel = await context.Client.GetChannelAsync(314664843892228096) as ITextChannel;
                 await botChannel.SendMessageAsync($"{context.User.Mention}, slow down a little. The command has a cooldown of {FormatTimeSpan(_invokeLimitPeriod)}");
                 await context.Message.DeleteAsync();
